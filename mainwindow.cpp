@@ -6,6 +6,10 @@
 #include<QRgb>
 #include<QtMath>
 
+#include "dialogbinarization.h"
+
+#include<QDebug>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -52,6 +56,8 @@ void MainWindow::on_actionGrayscale_triggered()
                        0.0722 * qPow(qBlue(oldColor), 2.2),
                        1/2.2
                        );
+            if (gray < 0 || gray > 255)
+                qDebug() << gray;
             QRgb newColor = qRgba(gray, gray, gray, qAlpha(oldColor));
             image.setPixel(x, y, newColor);
         }
@@ -59,4 +65,15 @@ void MainWindow::on_actionGrayscale_triggered()
     pixmap.convertFromImage(image);
 
     pixmapItem_2->setPixmap(pixmap);
+}
+
+void MainWindow::on_actionBinarization_manual_triggered()
+{
+    Dialogbinarization dialog;
+    if (dialog.exec() == QDialog::Accepted)
+    {
+        qDebug() << dialog.methodChosed();
+        qDebug() << dialog.treshold1();
+        qDebug() << dialog.treshold2();
+    }
 }

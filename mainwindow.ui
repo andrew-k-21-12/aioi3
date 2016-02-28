@@ -54,6 +54,7 @@
      <string>Image Conversion</string>
     </property>
     <addaction name="actionGrayscale"/>
+    <addaction name="actionBinarization_manual"/>
    </widget>
    <addaction name="menuImage"/>
    <addaction name="menuImage_Conversion"/>
@@ -80,6 +81,11 @@
   <action name="actionGrayscale">
    <property name="text">
     <string>Grayscale</string>
+   </property>
+  </action>
+  <action name="actionBinarization_manual">
+   <property name="text">
+    <string>Binarization (manual)</string>
    </property>
   </action>
  </widget>

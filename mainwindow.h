@@ -22,6 +22,8 @@ private slots:
 
     void on_actionGrayscale_triggered();
 
+    void on_actionBinarization_manual_triggered();
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;
