@@ -56,8 +56,6 @@ void MainWindow::on_actionGrayscale_triggered()
                        0.0722 * qPow(qBlue(oldColor), 2.2),
                        1/2.2
                        );
-            if (gray < 0 || gray > 255)
-                qDebug() << gray;
             QRgb newColor = qRgba(gray, gray, gray, qAlpha(oldColor));
             image.setPixel(x, y, newColor);
         }
@@ -72,8 +70,52 @@ void MainWindow::on_actionBinarization_manual_triggered()
     Dialogbinarization dialog;
     if (dialog.exec() == QDialog::Accepted)
     {
-        qDebug() << dialog.methodChosed();
-        qDebug() << dialog.treshold1();
-        qDebug() << dialog.treshold2();
+        QPixmap pixmap = pixmapItem->pixmap().copy();
+
+        QImage image = pixmap.toImage();
+        for (int y = 0; y < image.height(); ++y)
+            for (int x = 0; x < image.width(); ++x)
+            {
+                QRgb oldColor = image.pixel(x, y);
+                QRgb black = qRgb(0,0,0);
+                QRgb white = qRgb(255,255,255);
+                int gray = qPow(
+                           0.2126 * qPow(qRed(oldColor), 2.2) +
+                           0.7152 * qPow(qGreen(oldColor), 2.2) +
+                           0.0722 * qPow(qBlue(oldColor), 2.2),
+                           1/2.2
+                           );
+                QRgb newColor;
+                if (dialog.methodChosed() == 1)
+                {
+                    int treshold = dialog.treshold1();
+                    if ( gray < treshold )
+                        newColor = black;
+                    else
+                        newColor = white;
+                }
+                else if (dialog.methodChosed() == 2)
+                {
+                    int treshold = dialog.treshold1();
+                    if ( gray > treshold )
+                        newColor = black;
+                    else
+                        newColor = white;
+                }
+                else
+                {
+                    int treshold1 = dialog.treshold1();
+                    int treshold2 = dialog.treshold2();
+                    if ( treshold1 < gray && gray <= treshold2 )
+                        newColor = black;
+                    else
+                        newColor = white;
+                }
+                image.setPixel(x, y, newColor);
+            }
+
+        pixmap.convertFromImage(image);
+
+        pixmapItem_2->setPixmap(pixmap);
     }
 }
