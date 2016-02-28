@@ -10,9 +10,6 @@
     <height>600</height>
    </rect>
   </property>
-  <property name="windowTitle">
-   <string>MainWindow</string>
-  </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="2" column="0">
@@ -24,7 +21,7 @@
     <item row="1" column="1">
      <widget class="QLabel" name="label_2">
       <property name="text">
-       <string>Preview</string>
+       <string>Converted Image</string>
       </property>
      </widget>
     </item>
@@ -52,7 +49,14 @@
     </property>
     <addaction name="actionLoad"/>
    </widget>
+   <widget class="QMenu" name="menuImage_Conversion">
+    <property name="title">
+     <string>Image Conversion</string>
+    </property>
+    <addaction name="actionGrayscale"/>
+   </widget>
    <addaction name="menuImage"/>
+   <addaction name="menuImage_Conversion"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -71,6 +75,11 @@
    </property>
    <property name="text">
     <string>Load</string>
+   </property>
+  </action>
+  <action name="actionGrayscale">
+   <property name="text">
+    <string>Grayscale</string>
    </property>
   </action>
  </widget>

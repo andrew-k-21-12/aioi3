@@ -2,6 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QGraphicsScene>
+#include <QGraphicsPixmapItem>
 
 namespace Ui {
 class MainWindow;
@@ -18,8 +20,14 @@ public:
 private slots:
     void on_actionLoad_triggered();
 
+    void on_actionGrayscale_triggered();
+
 private:
     Ui::MainWindow *ui;
+    QGraphicsScene *scene;
+    QGraphicsScene *scene_2;
+    QGraphicsPixmapItem *pixmapItem;
+    QGraphicsPixmapItem *pixmapItem_2;
 };
 
 #endif // MAINWINDOW_H
