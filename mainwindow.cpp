@@ -36,7 +36,10 @@ void MainWindow::on_actionLoad_triggered()
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open Image"));
     QPixmap pixmap(fileName);
     if ( ! pixmap.isNull() )
+    {
         pixmapItem->setPixmap(pixmap);
+        scene->setSceneRect(QRectF(pixmap.rect()));
+    }
     else
         ui->statusBar->showMessage(tr("File loading error"), 3000);
 }
@@ -63,6 +66,7 @@ void MainWindow::on_actionGrayscale_triggered()
     pixmap.convertFromImage(image);
 
     pixmapItem_2->setPixmap(pixmap);
+    scene_2->setSceneRect(QRectF(pixmap.rect()));
 }
 
 void MainWindow::on_actionBinarization_manual_triggered()
@@ -117,5 +121,6 @@ void MainWindow::on_actionBinarization_manual_triggered()
         pixmap.convertFromImage(image);
 
         pixmapItem_2->setPixmap(pixmap);
+        scene_2->setSceneRect(QRectF(pixmap.rect()));
     }
 }
