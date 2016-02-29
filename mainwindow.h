@@ -24,6 +24,10 @@ private slots:
 
     void on_actionBinarization_manual_triggered();
 
+    void on_actionOtsu_global_triggered();
+
+    void on_actionSave_triggered();
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;
