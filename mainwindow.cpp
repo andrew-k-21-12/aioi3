@@ -41,6 +41,9 @@ void MainWindow::on_actionLoad_triggered()
     {
         pixmapItem->setPixmap(pixmap);
         scene->setSceneRect(QRectF(pixmap.rect()));
+        QPixmap pixmapEmpty;
+        pixmapItem_2->setPixmap(pixmapEmpty);
+        scene_2->setSceneRect(QRectF(pixmapEmpty.rect()));
     }
     else
         ui->statusBar->showMessage(tr("File loading error"), 3000);
@@ -134,6 +137,7 @@ void MainWindow::on_actionOtsu_global_triggered()
     QImage image = pixmap.toImage();
     int width = image.width();
     int height = image.height();
+
     int min = 256;
     int max = -1;
     std::vector<int> grays(width * height, 0);
@@ -214,4 +218,78 @@ void MainWindow::on_actionSave_triggered()
         ui->statusBar->showMessage(tr("File saved successful!"), 3000);
     else
         ui->statusBar->showMessage(tr("File saving error"), 3000);
+}
+
+void MainWindow::on_actionBrightness_gradient_triggered()
+{
+    QPixmap pixmap = pixmapItem->pixmap().copy();
+
+    QImage image = pixmap.toImage();
+    int width = image.width();
+    int height = image.height();
+
+    std::vector< std::vector<int> > grays( width, std::vector<int>(height) );
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int gray = qPow(
+                       0.2126 * qPow(qRed(oldColor), 2.2) +
+                       0.7152 * qPow(qGreen(oldColor), 2.2) +
+                       0.0722 * qPow(qBlue(oldColor), 2.2),
+                       1/2.2
+                       );
+            grays[x][y] = gray;
+        }
+
+    int G_x;
+    int G_y;
+    int G;
+    unsigned long int dividend = 0;
+    unsigned int divisor = 0;
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            if (x == 0)
+                G_x = grays[x+1][y];
+            else if (x == width - 1)
+                G_x = grays[x-1][y];
+            else
+                G_x = grays[x+1][y] - grays[x-1][y];
+            if (y == 0)
+                G_y = grays[x][y+1];
+            else if (y == height - 1)
+                G_y = grays[x][y-1];
+            else
+                G_y = grays[x][y+1] - grays[x][y-1];
+            G = qMax( qAbs(G_x), qAbs(G_y) );
+            dividend += grays[x][y] * G;
+            divisor += G;
+        }
+
+    int threshold = dividend / divisor;
+
+    if (0 <= threshold && threshold <= 255)
+    {
+        QRgb black = qRgb(0,0,0);
+        QRgb white = qRgb(255,255,255);
+        QRgb newColor;
+        for (int y = 0; y < height; ++y)
+            for (int x = 0; x < width; ++x)
+            {
+                int gray = grays[x][y];
+                if ( gray < threshold )
+                    newColor = black;
+                else
+                    newColor = white;
+                image.setPixel(x, y, newColor);
+            }
+    }
+    else
+        ui->statusBar->showMessage(tr("Error. Invalid threshold"), 3000);
+
+    pixmap.convertFromImage(image);
+
+    pixmapItem_2->setPixmap(pixmap);
+    scene_2->setSceneRect(QRectF(pixmap.rect()));
 }
