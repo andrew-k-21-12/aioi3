@@ -131,6 +131,67 @@ void MainWindow::on_actionBinarization_manual_triggered()
     }
 }
 
+int MainWindow::otsu(QImage &image, std::vector<int> &grays, int startX, int startY, int endX, int endY)
+{
+    int min = 256;
+    int max = -1;
+
+    for (int y = startY; y < endY; ++y)
+        for (int x = startX; x < endX; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int gray = qPow(
+                       0.2126 * qPow(qRed(oldColor), 2.2) +
+                       0.7152 * qPow(qGreen(oldColor), 2.2) +
+                       0.0722 * qPow(qBlue(oldColor), 2.2),
+                       1/2.2
+                       );
+            grays[x + y * (endX - startX)] = gray;
+            if (gray < min)
+                min = gray;
+            if (gray > max)
+                max = gray;
+        }
+
+    int histSize = max - min + 1;
+
+    std::vector<int> hist(histSize);
+    int graysStart = startX + startY * (endX - startX);
+    int graysEnd = (endX - 1) + (endY - 1) * (endX - startX) + 1;
+    for (int i = graysStart; i < graysEnd; ++i)
+        ++hist[grays[i] - min];
+    int t = 0;
+    int t1 = 0;
+    for (int i = 0; i < histSize; ++i)
+    {
+        t += i * hist[i];
+        t1 += hist[i];
+    }
+    int alpha = 0;
+    int beta = 0;
+    int threshold = 0;
+    double w1;
+    double a;
+    double sigma;
+    double maxSigma = -1;
+    for (int i = 0; i < histSize; ++i)
+    {
+        alpha += i * hist[i];
+        beta += hist[i];
+        w1 = (double) beta / t1;
+        a = (double) alpha / beta - (double) (t - alpha) / (t1 - beta);
+        sigma = w1 * (1 - w1) * a * a;
+        if (sigma > maxSigma)
+        {
+            maxSigma = sigma;
+            threshold = i;
+        }
+    }
+    int finalThreshold = threshold + min;
+
+    return finalThreshold;
+}
+
 void MainWindow::on_actionOtsu_global_triggered()
 {
     QPixmap pixmap = pixmapItem->pixmap().copy();
@@ -145,60 +206,9 @@ void MainWindow::on_actionOtsu_global_triggered()
         return;
     }
 
-    int min = 256;
-    int max = -1;
     std::vector<int> grays(width * height, 0);
-    for (int y = 0; y < height; ++y)
-        for (int x = 0; x < width; ++x)
-        {
-            QRgb oldColor = image.pixel(x, y);
-            int gray = qPow(
-                       0.2126 * qPow(qRed(oldColor), 2.2) +
-                       0.7152 * qPow(qGreen(oldColor), 2.2) +
-                       0.0722 * qPow(qBlue(oldColor), 2.2),
-                       1/2.2
-                       );
-            grays[x + y * width] = gray;
-            if (gray < min)
-                min = gray;
-            if (gray > max)
-                max = gray;
-        }
 
-    int histSize = max - min + 1;
-
-    std::vector<int> hist(histSize);
-    for (unsigned int i = 0; i < grays.size(); ++i)
-        ++hist[grays[i] - min];
-    int t = 0;
-    int t1 = 0;
-    int sz = max - min;
-    for (int i = 0; i < sz; ++i)
-    {
-        t += i * hist[i];
-        t1 += hist[i];
-    }
-    int alpha = 0;
-    int beta = 0;
-    int threshold = 0;
-    double w1;
-    double a;
-    double sigma;
-    double maxSigma = -1;
-    for (int i = 0; i < sz; ++i)
-    {
-        alpha += i * hist[i];
-        beta += hist[i];
-        w1 = (double) beta / t1;
-        a = (double) alpha / beta - (double) (t - alpha) / (t1 - beta);
-        sigma = w1 * (1 - w1) * a * a;
-        if (sigma > maxSigma)
-        {
-            maxSigma = sigma;
-            threshold = i;
-        }
-    }
-    int finalThreshold = threshold + min;
+    int finalThreshold = otsu(image, grays, 0, 0, width, height);
 
     QRgb black = qRgb(0,0,0);
     QRgb white = qRgb(255,255,255);
@@ -326,8 +336,64 @@ void MainWindow::on_actionOtsu_local_triggered()
     DialogOtsuLocal dialog;
     dialog.setSpinBoxes(pixmapItem->pixmap().width(), pixmapItem->pixmap().height());
 
-    if (dialog.exec() == QDialog::Accepted)
+    if (dialog.exec() == QDialog::Rejected)
         return;
 
+    std::vector<int> grays(width * height, 0);
 
+    int countX = dialog.gridX();
+    int countY = dialog.gridY();
+
+    double shiftY = ( (double) height ) / countY;
+    double shiftX = ( (double) width ) / countX;
+
+    double curX = 0.0;
+    double curY = 0.0;
+    double nextX = 0.0;
+    double nextY = 0.0;
+
+    int cX;
+    int cY;
+    int nX;
+    int nY;
+
+    QRgb black = qRgb(0,0,0);
+    QRgb white = qRgb(255,255,255);
+    QRgb newColor;
+
+    for (int i = 0; i < countY; ++i)
+    {
+        nextY += shiftY;
+        cY = qFloor(curY);
+        nY = qFloor(nextY);
+        curX = 0.0;
+        nextX = 0.0;
+        for (int j = 0; j < countX; ++j)
+        {
+            nextX += shiftX;
+            cX = qFloor(curX);
+            nX = qFloor(nextX);
+
+            int threshold = otsu(image, grays, cX, cY, nX, nY);
+
+            for (int y = cY; y < nY; ++y)
+                for (int x = cX; x < nX; ++x)
+                {
+                    int gray = grays[x + y * (nX - cX)];
+                    if ( gray < threshold )
+                        newColor = black;
+                    else
+                        newColor = white;
+                    image.setPixel(x, y, newColor);
+                }
+
+            curX = nextX;
+        }
+        curY = nextY;
+    }
+
+    pixmap.convertFromImage(image);
+
+    pixmapItem_2->setPixmap(pixmap);
+    scene_2->setSceneRect(QRectF(pixmap.rect()));
 }

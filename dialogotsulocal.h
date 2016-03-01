@@ -16,6 +16,8 @@ public:
     ~DialogOtsuLocal();
 
     void setSpinBoxes(int imageWidth, int imageHeight);
+    int gridX();
+    int gridY();
 
 private:
     Ui::DialogOtsuLocal *ui;

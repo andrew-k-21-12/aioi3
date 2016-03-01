@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <QGraphicsPixmapItem>
+#include <QImage>
 
 namespace Ui {
 class MainWindow;
@@ -16,6 +17,8 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
+    int otsu(QImage &image, std::vector<int> &grays, int startX, int startY, int endX, int endY);
 
 private slots:
     void on_actionLoad_triggered();
