@@ -59,6 +59,7 @@
     <addaction name="actionOtsu_global"/>
     <addaction name="actionOtsu_local"/>
     <addaction name="actionBrightness_gradient"/>
+    <addaction name="actionBrightness_quantization"/>
    </widget>
    <addaction name="menuImage"/>
    <addaction name="menuImage_Conversion"/>
@@ -115,6 +116,11 @@
   <action name="actionOtsu_local">
    <property name="text">
     <string>Otsu (local)</string>
+   </property>
+  </action>
+  <action name="actionBrightness_quantization">
+   <property name="text">
+    <string>Brightness quantization</string>
    </property>
   </action>
  </widget>

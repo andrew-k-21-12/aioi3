@@ -35,6 +35,8 @@ private slots:
 
     void on_actionOtsu_local_triggered();
 
+    void on_actionBrightness_quantization_triggered();
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;

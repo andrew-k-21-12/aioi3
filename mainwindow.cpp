@@ -7,9 +7,11 @@
 #include<QtMath>
 #include<QByteArray>
 #include<vector>
+#include<map>
 
 #include "dialogbinarization.h"
 #include "dialogotsulocal.h"
+#include "dialogquantization.h"
 
 #include<QDebug>
 
@@ -155,7 +157,7 @@ int MainWindow::otsu(QImage &image, std::vector<int> &grays, int startX, int sta
 
     int histSize = max - min + 1;
 
-    std::vector<int> hist(histSize);
+    std::vector<int> hist(histSize, 0);
     int graysStart = startX + startY * (endX - startX);
     int graysEnd = (endX - 1) + (endY - 1) * (endX - startX) + 1;
     for (int i = graysStart; i < graysEnd; ++i)
@@ -390,6 +392,114 @@ void MainWindow::on_actionOtsu_local_triggered()
             curX = nextX;
         }
         curY = nextY;
+    }
+
+    pixmap.convertFromImage(image);
+
+    pixmapItem_2->setPixmap(pixmap);
+    scene_2->setSceneRect(QRectF(pixmap.rect()));
+}
+
+void MainWindow::on_actionBrightness_quantization_triggered()
+{
+    QPixmap pixmap = pixmapItem->pixmap().copy();
+
+    QImage image = pixmap.toImage();
+    int width = image.width();
+    int height = image.height();
+
+    if (width == 0 || height == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
+
+    std::vector<int> grays(width * height);
+
+    int min = 256;
+    int max = -1;
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int gray = qPow(
+                       0.2126 * qPow(qRed(oldColor), 2.2) +
+                       0.7152 * qPow(qGreen(oldColor), 2.2) +
+                       0.0722 * qPow(qBlue(oldColor), 2.2),
+                       1/2.2
+                       );
+            grays[x + y * width] = gray;
+            if (gray < min)
+                min = gray;
+            if (gray > max)
+                max = gray;
+        }
+
+    int histSize = max - min + 1;
+
+    std::vector<unsigned int> Rs(histSize, 0);
+    std::vector<unsigned int> Gs(histSize, 0);
+    std::vector<unsigned int> Bs(histSize, 0);
+    std::vector<int> hist(histSize, 0);
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            int num = grays[x + y * width] - min;
+            Rs[num] += qRed( image.pixel(x, y) );
+            Gs[num] += qGreen( image.pixel(x, y) );
+            Bs[num] += qBlue( image.pixel(x, y) );
+            ++hist[num];
+        }
+
+    int quantsCountMaximum = 0;
+    std::map<int, QRgb> colors;
+    for (int i = 0; i < histSize; ++i)
+    {
+        if (hist[i] == 0)
+            continue;
+        Rs[i] /= hist[i];
+        Gs[i] /= hist[i];
+        Bs[i] /= hist[i];
+        colors[i] = qRgb(Rs[i], Gs[i], Bs[i]);
+        ++quantsCountMaximum;
+    }
+
+    DialogQuantization dialog;
+    dialog.setQuantCountMaximum(quantsCountMaximum);
+
+    if (dialog.exec() == QDialog::Rejected)
+        return;
+
+    int quantsCount = dialog.quantsCount();
+
+    double shift = histSize / quantsCount;
+    double cur = 0.0;
+    double next = 0.0;
+
+    for (int i = 0; i < quantsCount; ++i)
+    {
+        next += shift;
+        int c = qFloor(cur);
+        int n = qFloor(next);
+
+        int minC = 256;
+        for (std::map<int, QRgb>::iterator it = colors.begin(); it != colors.end(); ++it)
+            if (c <= (it->first) && (it->first) < n)
+                if (it->first < minC)
+                    minC = it->first;
+        QRgb newColor = colors[minC];
+
+        for (int y = 0; y < height; ++y)
+            for (int x = 0; x < width; ++x)
+            {
+                int num = grays[x + y * width] - min;
+                if (c <= num && num < n)
+                    image.setPixel(x, y, newColor);
+                else
+                    continue;
+            }
+        cur = next;
     }
 
     pixmap.convertFromImage(image);
