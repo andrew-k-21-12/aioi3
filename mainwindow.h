@@ -30,6 +30,8 @@ private slots:
 
     void on_actionBrightness_gradient_triggered();
 
+    void on_actionOtsu_local_triggered();
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;

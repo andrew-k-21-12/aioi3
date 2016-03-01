@@ -57,6 +57,7 @@
     <addaction name="actionGrayscale"/>
     <addaction name="actionBinarization_manual"/>
     <addaction name="actionOtsu_global"/>
+    <addaction name="actionOtsu_local"/>
     <addaction name="actionBrightness_gradient"/>
    </widget>
    <addaction name="menuImage"/>
@@ -109,6 +110,11 @@
   <action name="actionBrightness_gradient">
    <property name="text">
     <string>Brightness gradient</string>
+   </property>
+  </action>
+  <action name="actionOtsu_local">
+   <property name="text">
+    <string>Otsu (local)</string>
    </property>
   </action>
  </widget>

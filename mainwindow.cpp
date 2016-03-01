@@ -9,6 +9,7 @@
 #include<vector>
 
 #include "dialogbinarization.h"
+#include "dialogotsulocal.h"
 
 #include<QDebug>
 
@@ -306,4 +307,27 @@ void MainWindow::on_actionBrightness_gradient_triggered()
 
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
+}
+
+void MainWindow::on_actionOtsu_local_triggered()
+{
+    QPixmap pixmap = pixmapItem->pixmap().copy();
+
+    QImage image = pixmap.toImage();
+    int width = image.width();
+    int height = image.height();
+
+    if (width == 0 || height == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
+
+    DialogOtsuLocal dialog;
+    dialog.setSpinBoxes(pixmapItem->pixmap().width(), pixmapItem->pixmap().height());
+
+    if (dialog.exec() == QDialog::Accepted)
+        return;
+
+
 }

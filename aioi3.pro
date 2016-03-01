@@ -14,13 +14,16 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    dialogbinarization.cpp
+    dialogbinarization.cpp \
+    dialogotsulocal.cpp
 
 HEADERS  += mainwindow.h \
-    dialogbinarization.h
+    dialogbinarization.h \
+    dialogotsulocal.h
 
 FORMS    += mainwindow.ui \
-    dialogbinarization.ui
+    dialogbinarization.ui \
+    dialogotsulocal.ui
 
 RESOURCES += \
     resources.qrc
