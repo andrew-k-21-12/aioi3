@@ -138,6 +138,12 @@ void MainWindow::on_actionOtsu_global_triggered()
     int width = image.width();
     int height = image.height();
 
+    if (width == 0 || height == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
+
     int min = 256;
     int max = -1;
     std::vector<int> grays(width * height, 0);
@@ -157,7 +163,9 @@ void MainWindow::on_actionOtsu_global_triggered()
             if (gray > max)
                 max = gray;
         }
+
     int histSize = max - min + 1;
+
     std::vector<int> hist(histSize);
     for (unsigned int i = 0; i < grays.size(); ++i)
         ++hist[grays[i] - min];
@@ -227,6 +235,12 @@ void MainWindow::on_actionBrightness_gradient_triggered()
     QImage image = pixmap.toImage();
     int width = image.width();
     int height = image.height();
+
+    if (width == 0 || height == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
 
     std::vector< std::vector<int> > grays( width, std::vector<int>(height) );
     for (int y = 0; y < height; ++y)
