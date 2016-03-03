@@ -135,9 +135,6 @@ void MainWindow::on_actionBinarization_manual_triggered()
 
 int MainWindow::otsu(QImage &image, std::vector<int> &grays, int startX, int startY, int endX, int endY)
 {
-    int min = 256;
-    int max = -1;
-
     for (int y = startY; y < endY; ++y)
         for (int x = startX; x < endX; ++x)
         {
@@ -149,22 +146,16 @@ int MainWindow::otsu(QImage &image, std::vector<int> &grays, int startX, int sta
                        1/2.2
                        );
             grays[x + y * (endX - startX)] = gray;
-            if (gray < min)
-                min = gray;
-            if (gray > max)
-                max = gray;
         }
 
-    int histSize = max - min + 1;
-
-    std::vector<int> hist(histSize, 0);
+    std::vector<int> hist(256, 0);
     int graysStart = startX + startY * (endX - startX);
     int graysEnd = (endX - 1) + (endY - 1) * (endX - startX) + 1;
     for (int i = graysStart; i < graysEnd; ++i)
-        ++hist[grays[i] - min];
+        ++hist[grays[i]];
     int t = 0;
     int t1 = 0;
-    for (int i = 0; i < histSize; ++i)
+    for (int i = 0; i < 256; ++i)
     {
         t += i * hist[i];
         t1 += hist[i];
@@ -176,7 +167,7 @@ int MainWindow::otsu(QImage &image, std::vector<int> &grays, int startX, int sta
     double a;
     double sigma;
     double maxSigma = -1;
-    for (int i = 0; i < histSize; ++i)
+    for (int i = 0; i < 256; ++i)
     {
         alpha += i * hist[i];
         beta += hist[i];
@@ -189,7 +180,7 @@ int MainWindow::otsu(QImage &image, std::vector<int> &grays, int startX, int sta
             threshold = i;
         }
     }
-    int finalThreshold = threshold + min;
+    int finalThreshold = threshold;
 
     return finalThreshold;
 }
@@ -416,9 +407,6 @@ void MainWindow::on_actionBrightness_quantization_triggered()
 
     std::vector<int> grays(width * height);
 
-    int min = 256;
-    int max = -1;
-
     for (int y = 0; y < height; ++y)
         for (int x = 0; x < width; ++x)
         {
@@ -430,22 +418,16 @@ void MainWindow::on_actionBrightness_quantization_triggered()
                        1/2.2
                        );
             grays[x + y * width] = gray;
-            if (gray < min)
-                min = gray;
-            if (gray > max)
-                max = gray;
         }
 
-    int histSize = max - min + 1;
-
-    std::vector<unsigned int> Rs(histSize, 0);
-    std::vector<unsigned int> Gs(histSize, 0);
-    std::vector<unsigned int> Bs(histSize, 0);
-    std::vector<int> hist(histSize, 0);
+    std::vector<unsigned int> Rs(256, 0);
+    std::vector<unsigned int> Gs(256, 0);
+    std::vector<unsigned int> Bs(256, 0);
+    std::vector<int> hist(256, 0);
     for (int y = 0; y < height; ++y)
         for (int x = 0; x < width; ++x)
         {
-            int num = grays[x + y * width] - min;
+            int num = grays[x + y * width];
             Rs[num] += qRed( image.pixel(x, y) );
             Gs[num] += qGreen( image.pixel(x, y) );
             Bs[num] += qBlue( image.pixel(x, y) );
@@ -454,7 +436,7 @@ void MainWindow::on_actionBrightness_quantization_triggered()
 
     int quantsCountMaximum = 0;
     std::map<int, QRgb> colors;
-    for (int i = 0; i < histSize; ++i)
+    for (int i = 0; i < 256; ++i)
     {
         if (hist[i] == 0)
             continue;
@@ -473,7 +455,7 @@ void MainWindow::on_actionBrightness_quantization_triggered()
 
     int quantsCount = dialog.quantsCount();
 
-    double shift = histSize / quantsCount;
+    double shift = 256 / quantsCount;
     double cur = 0.0;
     double next = 0.0;
 
@@ -493,7 +475,7 @@ void MainWindow::on_actionBrightness_quantization_triggered()
         for (int y = 0; y < height; ++y)
             for (int x = 0; x < width; ++x)
             {
-                int num = grays[x + y * width] - min;
+                int num = grays[x + y * width];
                 if (c <= num && num < n)
                     image.setPixel(x, y, newColor);
                 else
@@ -506,4 +488,5 @@ void MainWindow::on_actionBrightness_quantization_triggered()
 
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
+    //ui->graphicsView_2->fitInView(scene_2->itemsBoundingRect(), Qt::KeepAspectRatio);
 }
