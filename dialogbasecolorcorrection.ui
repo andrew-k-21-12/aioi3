@@ -48,7 +48,7 @@
    <item row="3" column="0">
     <widget class="QToolButton" name="toolButton">
      <property name="enabled">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="text">
       <string/>

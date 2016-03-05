@@ -554,4 +554,36 @@ void MainWindow::on_actionBase_color_correction_triggered()
 
     if (dialog.exec() == QDialog::Rejected)
         return;
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            double red = qRed(oldColor);
+            double green = qGreen(oldColor);
+            double blue = qBlue(oldColor);
+            QColor dst = dialog.destinationColor();
+            QColor src = dialog.sourceColor();
+            red *= (double) dst.red() / src.red();
+            green *= (double) dst.green() / src.green();
+            blue *= (double) dst.blue() / src.blue();
+            if (red < 0)
+                red = 0;
+            if (red > 255)
+                red = 255;
+            if (green < 0)
+                green = 0;
+            if (green > 255)
+                green = 255;
+            if (blue < 0)
+                blue = 0;
+            if (blue > 255)
+                blue = 255;
+            image.setPixel(x, y, qRgb(red, green, blue));
+        }
+
+    pixmap.convertFromImage(image);
+
+    pixmapItem_2->setPixmap(pixmap);
+    scene_2->setSceneRect(QRectF(pixmap.rect()));
 }

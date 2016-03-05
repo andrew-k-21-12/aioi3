@@ -103,3 +103,10 @@ void DialogBaseColorCorrection::on_toolButton_2_clicked()
     if ( color.isValid() )
         ui->toolButton_2->setStyleSheet("background-color: " + color.name());
 }
+
+void DialogBaseColorCorrection::on_toolButton_clicked()
+{
+    QColor color = QColorDialog::getColor(destinationColor(), this, tr("Choose color"), QColorDialog::ShowAlphaChannel);
+    if ( color.isValid() )
+        ui->toolButton->setStyleSheet("background-color: " + color.name());
+}
