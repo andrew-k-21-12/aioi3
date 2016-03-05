@@ -16,17 +16,20 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     dialogbinarization.cpp \
     dialogotsulocal.cpp \
-    dialogquantization.cpp
+    dialogquantization.cpp \
+    dialogbasecolorcorrection.cpp
 
 HEADERS  += mainwindow.h \
     dialogbinarization.h \
     dialogotsulocal.h \
-    dialogquantization.h
+    dialogquantization.h \
+    dialogbasecolorcorrection.h
 
 FORMS    += mainwindow.ui \
     dialogbinarization.ui \
     dialogotsulocal.ui \
-    dialogquantization.ui
+    dialogquantization.ui \
+    dialogbasecolorcorrection.ui
 
 RESOURCES += \
     resources.qrc

@@ -6,6 +6,7 @@
 #include<QRgb>
 #include<QtMath>
 #include<QByteArray>
+#include<QScrollBar>
 #include<vector>
 #include<map>
 
@@ -27,6 +28,25 @@ MainWindow::MainWindow(QWidget *parent) :
     scene_2 = new QGraphicsScene(this);
     pixmapItem_2 = scene_2->addPixmap(QPixmap());
     ui->graphicsView_2->setScene(scene_2);
+    ui->graphicsView->installEventFilter(this);
+    ui->graphicsView_2->installEventFilter(this);
+    // Connections
+    connect(ui->graphicsView->horizontalScrollBar(),
+            SIGNAL(valueChanged(int)),
+            ui->graphicsView_2->horizontalScrollBar(),
+            SLOT(setValue(int)));
+    connect(ui->graphicsView_2->horizontalScrollBar(),
+            SIGNAL(valueChanged(int)),
+            ui->graphicsView->horizontalScrollBar(),
+            SLOT(setValue(int)));
+    connect(ui->graphicsView->verticalScrollBar(),
+            SIGNAL(valueChanged(int)),
+            ui->graphicsView_2->verticalScrollBar(),
+            SLOT(setValue(int)));
+    connect(ui->graphicsView_2->verticalScrollBar(),
+            SIGNAL(valueChanged(int)),
+            ui->graphicsView->verticalScrollBar(),
+            SLOT(setValue(int)));
 }
 
 MainWindow::~MainWindow()
@@ -34,6 +54,15 @@ MainWindow::~MainWindow()
     delete scene_2;
     delete scene;
     delete ui;
+}
+
+bool MainWindow::eventFilter(QObject *object, QEvent *event)
+{
+    if (ui->checkBox->isChecked() && object == ui->graphicsView && event->type() == QEvent::Paint)
+        ui->graphicsView->fitInView(pixmapItem, Qt::KeepAspectRatio);
+    if (ui->checkBox->isChecked() && object == ui->graphicsView_2 && event->type() == QEvent::Paint)
+        ui->graphicsView_2->fitInView(pixmapItem_2, Qt::KeepAspectRatio);
+    return false;
 }
 
 void MainWindow::on_actionLoad_triggered()
@@ -489,4 +518,18 @@ void MainWindow::on_actionBrightness_quantization_triggered()
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
     //ui->graphicsView_2->fitInView(scene_2->itemsBoundingRect(), Qt::KeepAspectRatio);
+}
+
+void MainWindow::on_checkBox_toggled(bool checked)
+{
+    if (checked)
+    {
+        ui->graphicsView->fitInView(pixmapItem, Qt::KeepAspectRatio);
+        ui->graphicsView_2->fitInView(pixmapItem_2, Qt::KeepAspectRatio);
+    }
+    else
+    {
+        ui->graphicsView->resetTransform();
+        ui->graphicsView_2->resetTransform();
+    }
 }

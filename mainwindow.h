@@ -17,6 +17,7 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+    bool eventFilter(QObject *object, QEvent *event);
 
     int otsu(QImage &image, std::vector<int> &grays, int startX, int startY, int endX, int endY);
 
@@ -36,6 +37,8 @@ private slots:
     void on_actionOtsu_local_triggered();
 
     void on_actionBrightness_quantization_triggered();
+
+    void on_checkBox_toggled(bool checked);
 
 private:
     Ui::MainWindow *ui;
