@@ -40,6 +40,8 @@ private slots:
 
     void on_checkBox_toggled(bool checked);
 
+    void on_actionBase_color_correction_triggered();
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;

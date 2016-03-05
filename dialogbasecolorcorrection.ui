@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>640</width>
-    <height>480</height>
+    <width>780</width>
+    <height>580</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,19 +24,6 @@
      </property>
     </widget>
    </item>
-   <item row="5" column="0">
-    <widget class="QGraphicsView" name="graphicsView"/>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Source color</string>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="1">
-    <widget class="QGraphicsView" name="graphicsView_2"/>
-   </item>
    <item row="2" column="1">
     <widget class="QLabel" name="label_2">
      <property name="text">
@@ -44,10 +31,10 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="1">
-    <widget class="QPushButton" name="pushButton">
+   <item row="2" column="0">
+    <widget class="QLabel" name="label">
      <property name="text">
-      <string>Open Image</string>
+      <string>Source color</string>
      </property>
     </widget>
    </item>
@@ -68,6 +55,19 @@
      </property>
     </widget>
    </item>
+   <item row="4" column="1">
+    <widget class="QPushButton" name="pushButton">
+     <property name="text">
+      <string>Open Image</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QGraphicsView" name="graphicsView_2"/>
+   </item>
+   <item row="5" column="0">
+    <widget class="QGraphicsView" name="graphicsView"/>
+   </item>
   </layout>
  </widget>
  <resources/>
@@ -79,8 +79,8 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
+     <x>561</x>
+     <y>448</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -95,8 +95,8 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
+     <x>629</x>
+     <y>448</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>

@@ -13,6 +13,7 @@
 #include "dialogbinarization.h"
 #include "dialogotsulocal.h"
 #include "dialogquantization.h"
+#include "dialogbasecolorcorrection.h"
 
 #include<QDebug>
 
@@ -532,4 +533,25 @@ void MainWindow::on_checkBox_toggled(bool checked)
         ui->graphicsView->resetTransform();
         ui->graphicsView_2->resetTransform();
     }
+}
+
+void MainWindow::on_actionBase_color_correction_triggered()
+{
+    QPixmap pixmap = pixmapItem->pixmap().copy();
+
+    QImage image = pixmap.toImage();
+    int width = image.width();
+    int height = image.height();
+
+    if (width == 0 || height == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
+
+    DialogBaseColorCorrection dialog;
+    dialog.setPixmap(pixmap);
+
+    if (dialog.exec() == QDialog::Rejected)
+        return;
 }
