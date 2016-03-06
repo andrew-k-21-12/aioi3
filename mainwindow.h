@@ -48,6 +48,8 @@ private slots:
 
     void on_actionGamma_correction_triggered();
 
+    void on_actionBrightness_normalization_triggered();
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;

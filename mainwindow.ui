@@ -147,6 +147,7 @@
     <addaction name="actionBase_color_correction"/>
     <addaction name="actionGray_world"/>
     <addaction name="menuConversion_function"/>
+    <addaction name="actionBrightness_normalization"/>
    </widget>
    <addaction name="menuImage"/>
    <addaction name="menuImage_Conversion"/>
@@ -229,6 +230,11 @@
   <action name="actionGamma_correction">
    <property name="text">
     <string>Gamma correction</string>
+   </property>
+  </action>
+  <action name="actionBrightness_normalization">
+   <property name="text">
+    <string>Brightness normalization</string>
    </property>
   </action>
  </widget>

@@ -27,13 +27,8 @@ void calcHist(QPixmap &pixmap, std::vector<int> &hist, int &maxLevel)
     for (int y = 0; y < image.height(); ++y)
         for (int x = 0; x < image.width(); ++x)
         {
-            QRgb oldColor = image.pixel(x, y);
-            int gray = qPow(
-                       0.2126 * qPow(qRed(oldColor), 2.2) +
-                       0.7152 * qPow(qGreen(oldColor), 2.2) +
-                       0.0722 * qPow(qBlue(oldColor), 2.2),
-                       1/2.2
-                       );
+            QColor oldColor(image.pixel(x, y));
+            int gray = oldColor.value();
             ++hist[gray];
             if (hist[gray] > maxLevel)
                 maxLevel = hist[gray];
@@ -765,37 +760,41 @@ void MainWindow::on_actionLinear_triggered()
         return;
     }
 
-    int min = 256;
-    int max = -1;
-    std::vector< std::vector<int> > grays( width, std::vector<int>(height) );
+    int minR = 256;
+    int maxR = -1;
+    int minG = 256;
+    int maxG = -1;
+    int minB = 256;
+    int maxB = -1;
 
     for (int y = 0; y < height; ++y)
         for (int x = 0; x < width; ++x)
         {
             QRgb oldColor = image.pixel(x, y);
-            int gray = qPow(
-                       0.2126 * qPow(qRed(oldColor), 2.2) +
-                       0.7152 * qPow(qGreen(oldColor), 2.2) +
-                       0.0722 * qPow(qBlue(oldColor), 2.2),
-                       1/2.2
-                       );
-            grays[x][y] = gray;
-            if (gray < min)
-                min = gray;
-            if (gray > max)
-                max = gray;
+            int red = qRed(oldColor);
+            int green = qGreen(oldColor);
+            int blue = qBlue(oldColor);
+            if (red < minR)
+                minR = red;
+            if (red > maxR)
+                maxR = red;
+            if (green < minG)
+                minG = green;
+            if (green > maxG)
+                maxG = green;
+            if (blue < minB)
+                minB = blue;
+            if (blue > maxB)
+                maxB = blue;
         }
 
     for (int y = 0; y < height; ++y)
         for (int x = 0; x < width; ++x)
         {
             QRgb oldColor = image.pixel(x, y);
-            int gray = grays[x][y];
-            double newGray = (gray - min) * 255 / (max - min);
-            int delta = (newGray - gray);
-            int red = qRed(oldColor) + delta;
-            int green = qGreen(oldColor) + delta;
-            int blue = qBlue(oldColor) + delta;
+            int red = ( qRed(oldColor) - minR) * 255 / (maxR - minR);
+            int green = ( qGreen(oldColor) - minG) * 255 / (maxG - minG);
+            int blue = ( qBlue(oldColor) - minB) * 255 / (maxB - minB);
             if (red < 0)
                 red = 0;
             if (red > 255)
@@ -823,4 +822,55 @@ void MainWindow::on_actionLinear_triggered()
 void MainWindow::on_actionGamma_correction_triggered()
 {
 
+}
+
+void MainWindow::on_actionBrightness_normalization_triggered()
+{
+    QPixmap pixmap = pixmapItem->pixmap().copy();
+
+    QImage image = pixmap.toImage();
+    int width = image.width();
+    int height = image.height();
+
+    if (width == 0 || height == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
+
+    int minV = 256;
+    int maxV = -1;
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QColor oldColor(image.pixel(x, y));
+            int v = oldColor.value();
+            if (v < minV)
+                minV = v;
+            if (v > maxV)
+                maxV = v;
+        }
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QColor oldColor(image.pixel(x, y));
+            int v = ( oldColor.value() - minV) * 255 / (maxV - minV);
+            if (v < 0)
+                v = 0;
+            if (v > 255)
+                v = 255;
+            QColor newColor;
+            newColor.setHsv(oldColor.hue(), oldColor.saturation(), v);
+            image.setPixel(x, y, newColor.rgb());
+        }
+
+    pixmap.convertFromImage(image);
+
+    pixmapItem_2->setPixmap(pixmap);
+    scene_2->setSceneRect(QRectF(pixmap.rect()));
+
+    calcHist(pixmap, hist_2, maxLevel_2);
+    drawHist(pixmapItem_4, hist_2, maxLevel_2);
 }
