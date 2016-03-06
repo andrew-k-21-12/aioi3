@@ -7,6 +7,7 @@
 #include<QtMath>
 #include<QByteArray>
 #include<QScrollBar>
+#include<QPainter>
 #include<vector>
 #include<map>
 
@@ -17,11 +18,70 @@
 
 #include<QDebug>
 
+void calcHist(QPixmap &pixmap, std::vector<int> &hist, int &maxLevel)
+{
+    QImage image = pixmap.toImage();
+    const int histSize = 256;
+    hist.assign(histSize, 0);
+    maxLevel = -1;
+    for (int y = 0; y < image.height(); ++y)
+        for (int x = 0; x < image.width(); ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int gray = qPow(
+                       0.2126 * qPow(qRed(oldColor), 2.2) +
+                       0.7152 * qPow(qGreen(oldColor), 2.2) +
+                       0.0722 * qPow(qBlue(oldColor), 2.2),
+                       1/2.2
+                       );
+            ++hist[gray];
+            if (hist[gray] > maxLevel)
+                maxLevel = hist[gray];
+        }
+}
+
+void drawHist(QGraphicsPixmapItem *pixmapItem, std::vector<int> &hist, int maxLevel)
+{
+    QGraphicsScene *scene = pixmapItem->scene();
+    QGraphicsView *view = scene->views()[0];
+    int width = view->contentsRect().width();
+    int height = view->contentsRect().height();
+    QColor black(0, 0, 0);
+    QColor white(255, 255, 255);
+    QColor red(255, 0, 0);
+    QImage image(width, height, QImage::Format_ARGB32);
+    image.fill(white);
+    QPainter p(&image);
+    double shift = (double) image.width() / hist.size();
+    double step = (double) image.height() / maxLevel;
+    for (unsigned int i = 0; i < hist.size(); ++i)
+    {
+        if (i == 0 || i == hist.size() - 1)
+        {
+            p.setPen(red);
+            p.setBrush(QBrush(red));
+        }
+        else if (i == 1)
+        {
+            p.setPen(black);
+            p.setBrush(QBrush(black));
+        }
+        if (hist[i] == 0)
+            continue;
+        int curHeight = hist[i] * step;
+        p.drawRect(qFloor(i * shift), qFloor(image.height() - curHeight), qFloor(shift), qFloor(curHeight));
+    }
+    pixmapItem->setPixmap(QPixmap::fromImage(image));
+    scene->setSceneRect(QRectF(image.rect()));
+}
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    maxLevel = 0;
+    maxLevel_2 = 0;
     this->setWindowTitle(tr("Kazaryan Paint"));
     scene = new QGraphicsScene(this);
     pixmapItem = scene->addPixmap(QPixmap());
@@ -31,6 +91,15 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->graphicsView_2->setScene(scene_2);
     ui->graphicsView->installEventFilter(this);
     ui->graphicsView_2->installEventFilter(this);
+    ui->graphicsView_3->installEventFilter(this);
+    ui->graphicsView_4->installEventFilter(this);
+    //
+    sceneHist = new QGraphicsScene(this);
+    pixmapItem_3 = sceneHist->addPixmap(QPixmap());
+    ui->graphicsView_3->setScene(sceneHist);
+    sceneHist_2 = new QGraphicsScene(this);
+    pixmapItem_4 = sceneHist_2->addPixmap(QPixmap());
+    ui->graphicsView_4->setScene(sceneHist_2);
     // Connections
     connect(ui->graphicsView->horizontalScrollBar(),
             SIGNAL(valueChanged(int)),
@@ -52,6 +121,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    delete sceneHist_2;
+    delete sceneHist;
     delete scene_2;
     delete scene;
     delete ui;
@@ -63,6 +134,10 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
         ui->graphicsView->fitInView(pixmapItem, Qt::KeepAspectRatio);
     if (ui->checkBox->isChecked() && object == ui->graphicsView_2 && event->type() == QEvent::Paint)
         ui->graphicsView_2->fitInView(pixmapItem_2, Qt::KeepAspectRatio);
+    if (object == ui->graphicsView_3 && event->type() == QEvent::Paint)
+        drawHist(pixmapItem_3, hist, maxLevel);
+    if (object == ui->graphicsView_4 && event->type() == QEvent::Paint)
+        drawHist(pixmapItem_4, hist_2, maxLevel_2);
     return false;
 }
 
@@ -77,6 +152,10 @@ void MainWindow::on_actionLoad_triggered()
         QPixmap pixmapEmpty;
         pixmapItem_2->setPixmap(pixmapEmpty);
         scene_2->setSceneRect(QRectF(pixmapEmpty.rect()));
+        calcHist(pixmap, hist, maxLevel);
+        drawHist(pixmapItem_3, hist, maxLevel);
+        hist_2.assign(256, 0);
+        drawHist(pixmapItem_4, hist_2, maxLevel_2);
     }
     else
         ui->statusBar->showMessage(tr("File loading error"), 3000);
@@ -105,6 +184,9 @@ void MainWindow::on_actionGrayscale_triggered()
 
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
+
+    calcHist(pixmap, hist_2, maxLevel_2);
+    drawHist(pixmapItem_4, hist_2, maxLevel_2);
 }
 
 void MainWindow::on_actionBinarization_manual_triggered()
@@ -160,6 +242,9 @@ void MainWindow::on_actionBinarization_manual_triggered()
 
         pixmapItem_2->setPixmap(pixmap);
         scene_2->setSceneRect(QRectF(pixmap.rect()));
+
+        calcHist(pixmap, hist_2, maxLevel_2);
+        drawHist(pixmapItem_4, hist_2, maxLevel_2);
     }
 }
 
@@ -251,6 +336,9 @@ void MainWindow::on_actionOtsu_global_triggered()
 
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
+
+    calcHist(pixmap, hist_2, maxLevel_2);
+    drawHist(pixmapItem_4, hist_2, maxLevel_2);
 }
 
 void MainWindow::on_actionSave_triggered()
@@ -340,6 +428,9 @@ void MainWindow::on_actionBrightness_gradient_triggered()
 
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
+
+    calcHist(pixmap, hist_2, maxLevel_2);
+    drawHist(pixmapItem_4, hist_2, maxLevel_2);
 }
 
 void MainWindow::on_actionOtsu_local_triggered()
@@ -419,6 +510,9 @@ void MainWindow::on_actionOtsu_local_triggered()
 
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
+
+    calcHist(pixmap, hist_2, maxLevel_2);
+    drawHist(pixmapItem_4, hist_2, maxLevel_2);
 }
 
 void MainWindow::on_actionBrightness_quantization_triggered()
@@ -519,6 +613,9 @@ void MainWindow::on_actionBrightness_quantization_triggered()
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
     //ui->graphicsView_2->fitInView(scene_2->itemsBoundingRect(), Qt::KeepAspectRatio);
+
+    calcHist(pixmap, hist_2, maxLevel_2);
+    drawHist(pixmapItem_4, hist_2, maxLevel_2);
 }
 
 void MainWindow::on_checkBox_toggled(bool checked)
@@ -586,4 +683,144 @@ void MainWindow::on_actionBase_color_correction_triggered()
 
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
+
+    calcHist(pixmap, hist_2, maxLevel_2);
+    drawHist(pixmapItem_4, hist_2, maxLevel_2);
+}
+
+void MainWindow::on_actionGray_world_triggered()
+{
+    QPixmap pixmap = pixmapItem->pixmap().copy();
+
+    QImage image = pixmap.toImage();
+    int width = image.width();
+    int height = image.height();
+
+    if (width == 0 || height == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
+
+    double avgRed = 0.0;
+    double avgGreen = 0.0;
+    double avgBlue = 0.0;
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            avgRed += qRed(oldColor);
+            avgGreen += qGreen(oldColor);
+            avgBlue += qBlue(oldColor);
+        }
+
+    int length = width * height;
+    avgRed /= length;
+    avgGreen /= length;
+    avgBlue /= length;
+    double avg = (avgRed + avgGreen + avgBlue) / 3;
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            double red = qRed(oldColor) * avg / avgRed;
+            double green = qGreen(oldColor) * avg / avgGreen;
+            double blue = qBlue(oldColor) * avg / avgBlue;
+            if (red < 0)
+                red = 0;
+            if (red > 255)
+                red = 255;
+            if (green < 0)
+                green = 0;
+            if (green > 255)
+                green = 255;
+            if (blue < 0)
+                blue = 0;
+            if (blue > 255)
+                blue = 255;
+            image.setPixel(x, y, qRgb(red, green, blue));
+        }
+
+    pixmap.convertFromImage(image);
+
+    pixmapItem_2->setPixmap(pixmap);
+    scene_2->setSceneRect(QRectF(pixmap.rect()));
+
+    calcHist(pixmap, hist_2, maxLevel_2);
+    drawHist(pixmapItem_4, hist_2, maxLevel_2);
+}
+
+void MainWindow::on_actionLinear_triggered()
+{
+    QPixmap pixmap = pixmapItem->pixmap().copy();
+
+    QImage image = pixmap.toImage();
+    int width = image.width();
+    int height = image.height();
+
+    if (width == 0 || height == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
+
+    int min = 256;
+    int max = -1;
+    std::vector< std::vector<int> > grays( width, std::vector<int>(height) );
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int gray = qPow(
+                       0.2126 * qPow(qRed(oldColor), 2.2) +
+                       0.7152 * qPow(qGreen(oldColor), 2.2) +
+                       0.0722 * qPow(qBlue(oldColor), 2.2),
+                       1/2.2
+                       );
+            grays[x][y] = gray;
+            if (gray < min)
+                min = gray;
+            if (gray > max)
+                max = gray;
+        }
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int gray = grays[x][y];
+            double newGray = (gray - min) * 255 / (max - min);
+            int delta = (newGray - gray);
+            int red = qRed(oldColor) + delta;
+            int green = qGreen(oldColor) + delta;
+            int blue = qBlue(oldColor) + delta;
+            if (red < 0)
+                red = 0;
+            if (red > 255)
+                red = 255;
+            if (green < 0)
+                green = 0;
+            if (green > 255)
+                green = 255;
+            if (blue < 0)
+                blue = 0;
+            if (blue > 255)
+                blue = 255;
+            image.setPixel(x, y, qRgb(red, green, blue));
+        }
+
+    pixmap.convertFromImage(image);
+
+    pixmapItem_2->setPixmap(pixmap);
+    scene_2->setSceneRect(QRectF(pixmap.rect()));
+
+    calcHist(pixmap, hist_2, maxLevel_2);
+    drawHist(pixmapItem_4, hist_2, maxLevel_2);
+}
+
+void MainWindow::on_actionGamma_correction_triggered()
+{
+
 }

@@ -12,26 +12,6 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="5" column="2">
-     <widget class="QGraphicsView" name="graphicsView_2"/>
-    </item>
-    <item row="5" column="0">
-     <widget class="QGraphicsView" name="graphicsView"/>
-    </item>
-    <item row="3" column="2">
-     <widget class="QLabel" name="label_2">
-      <property name="text">
-       <string>Converted Image</string>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="0">
-     <widget class="QLabel" name="label">
-      <property name="text">
-       <string>Image</string>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="0">
      <widget class="QCheckBox" name="checkBox">
       <property name="layoutDirection">
@@ -40,6 +20,88 @@
       <property name="text">
        <string>Fit In View</string>
       </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Image</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>Converted Image</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0" colspan="2">
+     <widget class="QSplitter" name="splitter_2">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <widget class="QWidget" name="">
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QGraphicsView" name="graphicsView"/>
+        </item>
+        <item>
+         <widget class="QGraphicsView" name="graphicsView_2"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QSplitter" name="splitter">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <widget class="QGraphicsView" name="graphicsView_3">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>150</height>
+         </size>
+        </property>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="resizeAnchor">
+         <enum>QGraphicsView::NoAnchor</enum>
+        </property>
+       </widget>
+       <widget class="QGraphicsView" name="graphicsView_4">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>150</height>
+         </size>
+        </property>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="resizeAnchor">
+         <enum>QGraphicsView::NoAnchor</enum>
+        </property>
+       </widget>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -75,7 +137,16 @@
     <property name="title">
      <string>Color Correction</string>
     </property>
+    <widget class="QMenu" name="menuConversion_function">
+     <property name="title">
+      <string>Conversion function</string>
+     </property>
+     <addaction name="actionLinear"/>
+     <addaction name="actionGamma_correction"/>
+    </widget>
     <addaction name="actionBase_color_correction"/>
+    <addaction name="actionGray_world"/>
+    <addaction name="menuConversion_function"/>
    </widget>
    <addaction name="menuImage"/>
    <addaction name="menuImage_Conversion"/>
@@ -143,6 +214,21 @@
   <action name="actionBase_color_correction">
    <property name="text">
     <string>Base color correction</string>
+   </property>
+  </action>
+  <action name="actionGray_world">
+   <property name="text">
+    <string>Gray world</string>
+   </property>
+  </action>
+  <action name="actionLinear">
+   <property name="text">
+    <string>Linear</string>
+   </property>
+  </action>
+  <action name="actionGamma_correction">
+   <property name="text">
+    <string>Gamma correction</string>
    </property>
   </action>
  </widget>

@@ -42,12 +42,26 @@ private slots:
 
     void on_actionBase_color_correction_triggered();
 
+    void on_actionGray_world_triggered();
+
+    void on_actionLinear_triggered();
+
+    void on_actionGamma_correction_triggered();
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;
     QGraphicsScene *scene_2;
+    QGraphicsScene *sceneHist;
+    QGraphicsScene *sceneHist_2;
     QGraphicsPixmapItem *pixmapItem;
     QGraphicsPixmapItem *pixmapItem_2;
+    QGraphicsPixmapItem *pixmapItem_3;
+    QGraphicsPixmapItem *pixmapItem_4;
+    std::vector<int> hist;
+    std::vector<int> hist_2;
+    int maxLevel;
+    int maxLevel_2;
 };
 
 #endif // MAINWINDOW_H
