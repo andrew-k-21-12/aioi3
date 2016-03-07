@@ -10,11 +10,14 @@
 #include<QPainter>
 #include<vector>
 #include<map>
+#include<cmath>
 
 #include "dialogbinarization.h"
 #include "dialogotsulocal.h"
 #include "dialogquantization.h"
 #include "dialogbasecolorcorrection.h"
+#include "dialoghistogramequalization.h"
+#include "dialoggammacorrection.h"
 
 #include<QDebug>
 
@@ -821,7 +824,76 @@ void MainWindow::on_actionLinear_triggered()
 
 void MainWindow::on_actionGamma_correction_triggered()
 {
+    QPixmap pixmap = pixmapItem->pixmap().copy();
 
+    QImage image = pixmap.toImage();
+    int width = image.width();
+    int height = image.height();
+
+    if (width == 0 || height == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
+
+    DialogGammaCorrection dialog;
+
+    if (dialog.exec() == QDialog::Rejected)
+        return;
+
+    int maxR = -1;
+    int maxG = -1;
+    int maxB = -1;
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int red = qRed(oldColor);
+            int green = qGreen(oldColor);
+            int blue = qBlue(oldColor);
+            if (red > maxR)
+                maxR = red;
+            if (green > maxG)
+                maxG = green;
+            if (blue > maxB)
+                maxB = blue;
+        }
+
+    double gamma = dialog.getGamma();
+    double cR = 255 / qPow(maxR, gamma);
+    double cG = 255 / qPow(maxG, gamma);
+    double cB = 255 / qPow(maxB, gamma);
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int red = cR * qPow(qRed(oldColor), gamma);
+            int green = cG * qPow(qGreen(oldColor), gamma);
+            int blue = cB * qPow(qBlue(oldColor), gamma);
+            if (red < 0)
+                red = 0;
+            if (red > 255)
+                red = 255;
+            if (green < 0)
+                green = 0;
+            if (green > 255)
+                green = 255;
+            if (blue < 0)
+                blue = 0;
+            if (blue > 255)
+                blue = 255;
+            image.setPixel(x, y, qRgb(red, green, blue));
+        }
+
+    pixmap.convertFromImage(image);
+
+    pixmapItem_2->setPixmap(pixmap);
+    scene_2->setSceneRect(QRectF(pixmap.rect()));
+
+    calcHist(pixmap, hist_2, maxLevel_2);
+    drawHist(pixmapItem_4, hist_2, maxLevel_2);
 }
 
 void MainWindow::on_actionBrightness_normalization_triggered()
@@ -864,6 +936,244 @@ void MainWindow::on_actionBrightness_normalization_triggered()
             QColor newColor;
             newColor.setHsv(oldColor.hue(), oldColor.saturation(), v);
             image.setPixel(x, y, newColor.rgb());
+        }
+
+    pixmap.convertFromImage(image);
+
+    pixmapItem_2->setPixmap(pixmap);
+    scene_2->setSceneRect(QRectF(pixmap.rect()));
+
+    calcHist(pixmap, hist_2, maxLevel_2);
+    drawHist(pixmapItem_4, hist_2, maxLevel_2);
+}
+
+void RGB_equalization(QImage &image)
+{
+    int width = image.width();
+    int height = image.height();
+
+    int histSize = 256;
+    std::vector<double> histR(histSize, 0.0);
+    std::vector<double> histG(histSize, 0.0);
+    std::vector<double> histB(histSize, 0.0);
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int red = qRed(oldColor);
+            int green = qGreen(oldColor);
+            int blue = qBlue(oldColor);
+            ++histR[red];
+            ++histG[green];
+            ++histB[blue];
+        }
+
+    for (int i = 1; i < histSize; ++i)
+    {
+        histR[i] += histR[i - 1];
+        histG[i] += histG[i - 1];
+        histB[i] += histB[i - 1];
+    }
+
+    for (int i = 0; i < histSize; ++i)
+    {
+        histR[i] /= width * height;
+        histG[i] /= width * height;
+        histB[i] /= width * height;
+    }
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int red = qRed(oldColor);
+            int green = qGreen(oldColor);
+            int blue = qBlue(oldColor);
+            int newRed = qMin(qFloor(histSize * histR[red]), histSize - 1);
+            int newGreen = qMin(qFloor(histSize * histG[green]), histSize - 1);
+            int newBlue = qMin(qFloor(histSize * histB[blue]), histSize - 1);
+            image.setPixel(x, y, qRgb(newRed, newGreen, newBlue));
+        }
+}
+
+void V_equalization(QImage &image)
+{
+    int width = image.width();
+    int height = image.height();
+
+    int histSize = 256;
+    std::vector<double> histV(histSize, 0.0);
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QColor oldColor(image.pixel(x, y));
+            int v = oldColor.value();
+            ++histV[v];
+        }
+
+    for (int i = 1; i < histSize; ++i)
+        histV[i] += histV[i - 1];
+
+    for (int i = 0; i < histSize; ++i)
+        histV[i] /= width * height;
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QColor oldColor(image.pixel(x, y));
+            int h = oldColor.hue();
+            int s = oldColor.saturation();
+            int v = oldColor.value();
+            int newV = qMin(qFloor(histSize * histV[v]), histSize - 1);
+            QColor newColor;
+            newColor.setHsv(h, s, newV);
+            image.setPixel(x, y, newColor.rgb());
+        }
+}
+
+void Grayscale_equalization(QImage &image)
+{
+    int width = image.width();
+    int height = image.height();
+
+    int histSize = 256;
+    std::vector<double> hist(histSize, 0.0);
+
+    std::vector< std::vector<int> > grays(width, std::vector<int>(height) );
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int gray = qPow(
+                       0.2126 * qPow(qRed(oldColor), 2.2) +
+                       0.7152 * qPow(qGreen(oldColor), 2.2) +
+                       0.0722 * qPow(qBlue(oldColor), 2.2),
+                       1/2.2
+                       );
+            grays[x][y] = gray;
+            ++hist[gray];
+        }
+
+    for (int i = 1; i < histSize; ++i)
+        hist[i] += hist[i - 1];
+
+    for (int i = 0; i < histSize; ++i)
+        hist[i] /= width * height;
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int red = qRed(oldColor);
+            int green = qGreen(oldColor);
+            int blue = qBlue(oldColor);
+            int gray = grays[x][y];
+            int newGray = qMin(qFloor(histSize * hist[gray]), histSize - 1);
+            int delta = newGray - gray;
+            int newRed = qMax(qMin(red + delta, 255), 0);
+            int newGreen = qMax(qMin(green + delta, 255), 0);;
+            int newBlue = qMax(qMin(blue + delta, 255), 0);;
+            image.setPixel(x, y, qRgb(newRed, newGreen, newBlue));
+        }
+}
+
+void MainWindow::on_actionHistogram_equalization_triggered()
+{
+    QPixmap pixmap = pixmapItem->pixmap().copy();
+
+    QImage image = pixmap.toImage();
+    int width = image.width();
+    int height = image.height();
+
+    if (width == 0 || height == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
+
+    DialogHistogramEqualization dialog;
+
+    if (dialog.exec() == QDialog::Rejected)
+        return;
+
+    int equalizationType = dialog.getEqualizationType();
+
+    if (equalizationType == 1)
+        RGB_equalization(image);
+    else if (equalizationType == 2)
+        V_equalization(image);
+    else if (equalizationType == 3)
+        Grayscale_equalization(image);
+
+    pixmap.convertFromImage(image);
+
+    pixmapItem_2->setPixmap(pixmap);
+    scene_2->setSceneRect(QRectF(pixmap.rect()));
+
+    calcHist(pixmap, hist_2, maxLevel_2);
+    drawHist(pixmapItem_4, hist_2, maxLevel_2);
+}
+
+void MainWindow::on_actionLg_triggered()
+{
+    QPixmap pixmap = pixmapItem->pixmap().copy();
+
+    QImage image = pixmap.toImage();
+    int width = image.width();
+    int height = image.height();
+
+    if (width == 0 || height == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
+
+    int maxR = -1;
+    int maxG = -1;
+    int maxB = -1;
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int red = qRed(oldColor);
+            int green = qGreen(oldColor);
+            int blue = qBlue(oldColor);
+            if (red > maxR)
+                maxR = red;
+            if (green > maxG)
+                maxG = green;
+            if (blue > maxB)
+                maxB = blue;
+        }
+
+    double cR = 255 / log10(1 + maxR);
+    double cG = 255 / log10(1 + maxG);
+    double cB = 255 / log10(1 + maxB);
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int red = cR * log10(1 + qRed(oldColor));
+            int green = cG * log10(1 + qGreen(oldColor));
+            int blue = cB * log10(1 + qBlue(oldColor));
+            if (red < 0)
+                red = 0;
+            if (red > 255)
+                red = 255;
+            if (green < 0)
+                green = 0;
+            if (green > 255)
+                green = 255;
+            if (blue < 0)
+                blue = 0;
+            if (blue > 255)
+                blue = 255;
+            image.setPixel(x, y, qRgb(red, green, blue));
         }
 
     pixmap.convertFromImage(image);

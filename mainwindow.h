@@ -50,6 +50,10 @@ private slots:
 
     void on_actionBrightness_normalization_triggered();
 
+    void on_actionHistogram_equalization_triggered();
+
+    void on_actionLg_triggered();
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;

@@ -41,7 +41,7 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <item>
          <widget class="QGraphicsView" name="graphicsView"/>
@@ -143,11 +143,13 @@
      </property>
      <addaction name="actionLinear"/>
      <addaction name="actionGamma_correction"/>
+     <addaction name="actionLg"/>
     </widget>
     <addaction name="actionBase_color_correction"/>
     <addaction name="actionGray_world"/>
     <addaction name="menuConversion_function"/>
     <addaction name="actionBrightness_normalization"/>
+    <addaction name="actionHistogram_equalization"/>
    </widget>
    <addaction name="menuImage"/>
    <addaction name="menuImage_Conversion"/>
@@ -235,6 +237,16 @@
   <action name="actionBrightness_normalization">
    <property name="text">
     <string>Brightness normalization</string>
+   </property>
+  </action>
+  <action name="actionHistogram_equalization">
+   <property name="text">
+    <string>Histogram equalization</string>
+   </property>
+  </action>
+  <action name="actionLg">
+   <property name="text">
+    <string>Lg</string>
    </property>
   </action>
  </widget>

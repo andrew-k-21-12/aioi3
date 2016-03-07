@@ -18,21 +18,27 @@ SOURCES += main.cpp\
     dialogotsulocal.cpp \
     dialogquantization.cpp \
     dialogbasecolorcorrection.cpp \
-    dialoghistogramnormalization.cpp
+    dialoghistogramnormalization.cpp \
+    dialoghistogramequalization.cpp \
+    dialoggammacorrection.cpp
 
 HEADERS  += mainwindow.h \
     dialogbinarization.h \
     dialogotsulocal.h \
     dialogquantization.h \
     dialogbasecolorcorrection.h \
-    dialoghistogramnormalization.h
+    dialoghistogramnormalization.h \
+    dialoghistogramequalization.h \
+    dialoggammacorrection.h
 
 FORMS    += mainwindow.ui \
     dialogbinarization.ui \
     dialogotsulocal.ui \
     dialogquantization.ui \
     dialogbasecolorcorrection.ui \
-    dialoghistogramnormalization.ui
+    dialoghistogramnormalization.ui \
+    dialoghistogramequalization.ui \
+    dialoggammacorrection.ui
 
 RESOURCES += \
     resources.qrc
