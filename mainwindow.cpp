@@ -1207,7 +1207,41 @@ void MainWindow::on_actionPiecewise_linear_triggered()
         return;
 
     std::vector<double> nums = dialog.getNums();
+
     pieceWiseLinearText = dialog.getString();
+
+    bool normalize = dialog.isNormalize();
+    std::vector<double> csR(nums.size() / 4);
+    std::vector<double> csG(nums.size() / 4);
+    std::vector<double> csB(nums.size() / 4);
+    if (normalize)
+    {
+        int maxR = -1;
+        int maxG = -1;
+        int maxB = -1;
+
+        for (int y = 0; y < height; ++y)
+            for (int x = 0; x < width; ++x)
+            {
+                QRgb oldColor = image.pixel(x, y);
+                int red = qRed(oldColor);
+                int green = qGreen(oldColor);
+                int blue = qBlue(oldColor);
+                if (red > maxR)
+                    maxR = red;
+                if (green > maxG)
+                    maxG = green;
+                if (blue > maxB)
+                    maxB = blue;
+            }
+
+        for (unsigned int i = 0; i < nums.size(); i += 4)
+        {
+            csR[i/4] = 255 / (nums[i] * maxR + nums[i+1]);
+            csG[i/4] = 255 / (nums[i] * maxG + nums[i+1]);
+            csB[i/4] = 255 / (nums[i] * maxB + nums[i+1]);
+        }
+    }
 
     for (int y = 0; y < height; ++y)
         for (int x = 0; x < width; ++x)
@@ -1216,6 +1250,9 @@ void MainWindow::on_actionPiecewise_linear_triggered()
             int red = qRed(oldColor);
             int green = qGreen(oldColor);
             int blue = qBlue(oldColor);
+            double cR = 1.0;
+            double cG = 1.0;
+            double cB = 1.0;
             for (unsigned int i = 0; i < nums.size(); i += 4)
             {
                 double k = nums[i];
@@ -1224,7 +1261,9 @@ void MainWindow::on_actionPiecewise_linear_triggered()
                 int right = qFloor(nums[i+3]);
                 if (left <= red && red <= right)
                 {
-                    red = k * red + b;
+                    if (normalize)
+                        cR = csR[i/4];
+                    red = cR * (k * red + b);
                     if (red < 0)
                         red = 0;
                     if (red > 255)
@@ -1232,7 +1271,9 @@ void MainWindow::on_actionPiecewise_linear_triggered()
                 }
                 if (left <= green && green <= right)
                 {
-                    green = k * green + b;
+                    if (normalize)
+                        cG = csG[i/4];
+                    green = cG * (k * green + b);
                     if (green < 0)
                         green = 0;
                     if (green > 255)
@@ -1240,7 +1281,9 @@ void MainWindow::on_actionPiecewise_linear_triggered()
                 }
                 if (left <= blue && blue <= right)
                 {
-                    blue = k * blue + b;
+                    if (normalize)
+                        cB = csB[i/4];
+                    blue = cB * (k * blue + b);
                     if (blue < 0)
                         blue = 0;
                     if (blue > 255)

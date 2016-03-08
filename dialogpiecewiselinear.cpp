@@ -34,6 +34,11 @@ void DialogPiecewiseLinear::setText(QString text)
     ui->textEdit->setPlainText(text);
 }
 
+bool DialogPiecewiseLinear::isNormalize()
+{
+    return ui->checkBox->isChecked();
+}
+
 bool DialogPiecewiseLinear::calcRange()
 {
     std::list< std::pair<int, int> > range;

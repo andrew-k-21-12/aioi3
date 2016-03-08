@@ -18,6 +18,7 @@ public:
     const std::vector<double>& getNums();
     QString getString();
     void setText(QString text);
+    bool isNormalize();
 
 private slots:
     void on_textEdit_textChanged();
