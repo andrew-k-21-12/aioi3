@@ -144,6 +144,7 @@
      <addaction name="actionLinear"/>
      <addaction name="actionGamma_correction"/>
      <addaction name="actionLg"/>
+     <addaction name="actionPiecewise_linear"/>
     </widget>
     <addaction name="actionBase_color_correction"/>
     <addaction name="actionGray_world"/>
@@ -247,6 +248,11 @@
   <action name="actionLg">
    <property name="text">
     <string>Lg</string>
+   </property>
+  </action>
+  <action name="actionPiecewise_linear">
+   <property name="text">
+    <string>Piecewise linear</string>
    </property>
   </action>
  </widget>

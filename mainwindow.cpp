@@ -18,6 +18,7 @@
 #include "dialogbasecolorcorrection.h"
 #include "dialoghistogramequalization.h"
 #include "dialoggammacorrection.h"
+#include "dialogpiecewiselinear.h"
 
 #include<QDebug>
 
@@ -1173,6 +1174,79 @@ void MainWindow::on_actionLg_triggered()
                 blue = 0;
             if (blue > 255)
                 blue = 255;
+            image.setPixel(x, y, qRgb(red, green, blue));
+        }
+
+    pixmap.convertFromImage(image);
+
+    pixmapItem_2->setPixmap(pixmap);
+    scene_2->setSceneRect(QRectF(pixmap.rect()));
+
+    calcHist(pixmap, hist_2, maxLevel_2);
+    drawHist(pixmapItem_4, hist_2, maxLevel_2);
+}
+
+void MainWindow::on_actionPiecewise_linear_triggered()
+{
+    QPixmap pixmap = pixmapItem->pixmap().copy();
+
+    QImage image = pixmap.toImage();
+    int width = image.width();
+    int height = image.height();
+
+    if (width == 0 || height == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
+
+    DialogPiecewiseLinear dialog;
+    dialog.setText(pieceWiseLinearText);
+
+    if (dialog.exec() == QDialog::Rejected)
+        return;
+
+    std::vector<double> nums = dialog.getNums();
+    pieceWiseLinearText = dialog.getString();
+
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            QRgb oldColor = image.pixel(x, y);
+            int red = qRed(oldColor);
+            int green = qGreen(oldColor);
+            int blue = qBlue(oldColor);
+            for (unsigned int i = 0; i < nums.size(); i += 4)
+            {
+                double k = nums[i];
+                double b = nums[i+1];
+                int left = qFloor(nums[i+2]);
+                int right = qFloor(nums[i+3]);
+                if (left <= red && red <= right)
+                {
+                    red = k * red + b;
+                    if (red < 0)
+                        red = 0;
+                    if (red > 255)
+                        red = 255;
+                }
+                if (left <= green && green <= right)
+                {
+                    green = k * green + b;
+                    if (green < 0)
+                        green = 0;
+                    if (green > 255)
+                        green = 255;
+                }
+                if (left <= blue && blue <= right)
+                {
+                    blue = k * blue + b;
+                    if (blue < 0)
+                        blue = 0;
+                    if (blue > 255)
+                        blue = 255;
+                }
+            }
             image.setPixel(x, y, qRgb(red, green, blue));
         }
 

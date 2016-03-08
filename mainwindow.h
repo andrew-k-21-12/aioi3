@@ -54,6 +54,8 @@ private slots:
 
     void on_actionLg_triggered();
 
+    void on_actionPiecewise_linear_triggered();
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;
@@ -68,6 +70,7 @@ private:
     std::vector<int> hist_2;
     int maxLevel;
     int maxLevel_2;
+    QString pieceWiseLinearText;
 };
 
 #endif // MAINWINDOW_H

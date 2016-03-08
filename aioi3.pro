@@ -20,7 +20,8 @@ SOURCES += main.cpp\
     dialogbasecolorcorrection.cpp \
     dialoghistogramnormalization.cpp \
     dialoghistogramequalization.cpp \
-    dialoggammacorrection.cpp
+    dialoggammacorrection.cpp \
+    dialogpiecewiselinear.cpp
 
 HEADERS  += mainwindow.h \
     dialogbinarization.h \
@@ -29,7 +30,8 @@ HEADERS  += mainwindow.h \
     dialogbasecolorcorrection.h \
     dialoghistogramnormalization.h \
     dialoghistogramequalization.h \
-    dialoggammacorrection.h
+    dialoggammacorrection.h \
+    dialogpiecewiselinear.h
 
 FORMS    += mainwindow.ui \
     dialogbinarization.ui \
@@ -38,7 +40,8 @@ FORMS    += mainwindow.ui \
     dialogbasecolorcorrection.ui \
     dialoghistogramnormalization.ui \
     dialoghistogramequalization.ui \
-    dialoggammacorrection.ui
+    dialoggammacorrection.ui \
+    dialogpiecewiselinear.ui
 
 RESOURCES += \
     resources.qrc
