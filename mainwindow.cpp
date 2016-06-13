@@ -2,10 +2,13 @@
 #include "ui_mainwindow.h"
 
 #include<QFileDialog>
+#include<QDir>
+#include<QDirIterator>
 #include<QImage>
 #include<QRgb>
 #include<QtMath>
 #include<QByteArray>
+#include<QBitArray>
 #include<QScrollBar>
 #include<QPainter>
 #include<vector>
@@ -19,6 +22,7 @@
 #include "dialoghistogramequalization.h"
 #include "dialoggammacorrection.h"
 #include "dialogpiecewiselinear.h"
+#include "dialogzoom.h"
 
 #include<QDebug>
 
@@ -99,6 +103,21 @@ MainWindow::MainWindow(QWidget *parent) :
     sceneHist_2 = new QGraphicsScene(this);
     pixmapItem_4 = sceneHist_2->addPixmap(QPixmap());
     ui->graphicsView_4->setScene(sceneHist_2);
+
+    mA.assign(64, std::vector<double>(64, 0));
+    for (int i = 0; i < 64; ++i)
+        for (int j = 0; j < 64; ++j)
+        {
+            QBitArray b1(8);
+            writeBits(i, b1, 0, 7);
+            QBitArray b2(8);
+            writeBits(j, b2, 0, 7);
+            int r = 0;
+            for (int k = 0; k < b1.size(); ++k)
+                r += (int) (b1[k] ^ b2[k]);
+            mA[i][j] = r / 8.0;
+        }
+
     // Connections
     connect(ui->graphicsView->horizontalScrollBar(),
             SIGNAL(valueChanged(int)),
@@ -137,6 +156,13 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
         drawHist(pixmapItem_3, hist, maxLevel);
     if (object == ui->graphicsView_4 && event->type() == QEvent::Paint)
         drawHist(pixmapItem_4, hist_2, maxLevel_2);
+    if (object == ui->graphicsView_2 && event->type() == QEvent::MouseButtonPress)
+    {
+        ++picturesRind;
+        int curInd = picturesRind % picturesR.size();
+        pixmapItem_2->setPixmap(picturesR[curInd]);
+        scene_2->setSceneRect(QRectF(picturesR[curInd].rect()));
+    }
     return false;
 }
 
@@ -1300,4 +1326,375 @@ void MainWindow::on_actionPiecewise_linear_triggered()
 
     calcHist(pixmap, hist_2, maxLevel_2);
     drawHist(pixmapItem_4, hist_2, maxLevel_2);
+}
+
+double CubicInterpolation(double x, double f0, double f1, double f2, double f3)
+{
+    double b0 = f1;
+    double b1 = (-f0 + f2) / 2;
+    double b2 = f0 - 5 * f1 / 2 + 2 * f2 - f3 / 2;
+    double b3 = (f3 - f0) / 2 + 3 * (f1 - f2) / 2;
+    return b0 + b1 * x + b2 * qPow(x, 2) + b3 * qPow(x, 3);
+}
+
+void MainWindow::on_actionZoom_triggered()
+{
+    QPixmap oldPixmap = pixmapItem->pixmap();
+
+    QImage oldImage = oldPixmap.toImage();
+    int oldWidth = oldImage.width();
+    int oldHeight = oldImage.height();
+
+    if (oldWidth == 0 || oldHeight == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
+
+    DialogZoom dialog;
+    if (dialog.exec() == QDialog::Rejected)
+        return;
+
+    double value = dialog.getValue();
+    int choice = dialog.getChoice();
+
+    int width = oldWidth * value;
+    int height = oldHeight * value;
+
+    QImage image(width, height, QImage::Format_ARGB32);
+    image.fill( QColor(255, 255, 255) );
+    if (choice == 1)
+    {
+        for (int i = 0; i < width; ++i)
+            for (int j = 0; j < height; ++j)
+            {
+                int srcX = i / value;
+                int srcY = j / value;
+                image.setPixel(i, j, oldImage.pixel(srcX, srcY));
+            }
+    }
+    else if (choice == 2)
+    {
+        int h, w;
+        double t;
+        double u;
+        double tmp;
+        double d1, d2, d3, d4;
+        QRgb p1, p2, p3, p4;
+
+        int red, green, blue;
+
+        for (int j = 0; j < height; ++j)
+        {
+            tmp = j / (double) (height - 1) * (oldHeight - 1);
+            h = qFloor(tmp);
+            h = h < 0? 0: (h >= oldHeight - 1? oldHeight - 2: h);
+
+            u = tmp - h;
+
+            for (int i = 0; i < width; ++i)
+            {
+
+                tmp = i / (double) (width - 1) * (oldWidth - 1);
+                w = qFloor(tmp);
+                w = w < 0? 0: (w >= oldWidth - 1? oldWidth - 2: w);
+
+                t = tmp - w;
+
+                d1 = (1 - t) * (1 - u);
+                d2 = t * (1 - u);
+                d3 = t * u;
+                d4 = (1 - t) * u;
+
+                p1 = oldImage.pixel(w, h);
+                p2 = oldImage.pixel(w + 1, h);
+                p3 = oldImage.pixel(w + 1, h + 1);
+                p4 = oldImage.pixel(w, h + 1);
+
+
+                red = (int)(qRed(p1) * d1) + (int)(qRed(p2) * d2) + (int)(qRed(p3) * d3) + (int)(qRed(p4) * d4);
+                blue = (int)(qBlue(p1) * d1) + (int)(qBlue(p2) * d2) + (int)(qBlue(p3) * d3) + (int)(qBlue(p4) * d4);
+                green = (int)(qGreen(p1) * d1) + (int)(qGreen(p2) * d2) + (int)(qGreen(p3) * d3) + (int)(qGreen(p4) * d4);
+
+                image.setPixel(i, j, qRgb(red, green, blue));
+            }
+        }
+    }
+    else if (choice == 3)
+    {
+        int scale = qCeil(value);
+        for (int j = scale; j < height - 2 * value; ++j)
+        {
+//            int h = qFloor(j / value);
+//            h = h < 0? 0: (h >= oldHeight - 1? oldHeight - 2: h);
+            for (int i = scale; i < width - 2 * value; ++i)
+            {
+//                int w = qFloor(i / value);
+//                w = w < 0? 0: (w >= oldWidth - 1? oldWidth - 2: w);
+
+                int srcX = qFloor(i / value);
+                int srcY = qFloor(j / value);
+
+                double relativeX = (i / value) - qFloor((i / value));
+                double relativeY = (j / value) - qFloor((j / value));
+
+                QRgb p00 = oldImage.pixel(srcX - 1, srcY - 1);
+                QRgb p10 = oldImage.pixel(srcX, srcY - 1);
+                QRgb p20 = oldImage.pixel(srcX + 1, srcY - 1);
+                QRgb p30 = oldImage.pixel(srcX + 2, srcY - 1);
+                QRgb p01 = oldImage.pixel(srcX - 1, srcY);
+                QRgb p11 = oldImage.pixel(srcX, srcY);
+                QRgb p21 = oldImage.pixel(srcX + 1, srcY);
+                QRgb p31 = oldImage.pixel(srcX + 2, srcY);
+                QRgb p02 = oldImage.pixel(srcX - 1, srcY + 1);
+                QRgb p12 = oldImage.pixel(srcX, srcY + 1);
+                QRgb p22 = oldImage.pixel(srcX + 1, srcY + 1);
+                QRgb p32 = oldImage.pixel(srcX + 2, srcY + 1);
+                QRgb p03 = oldImage.pixel(srcX - 1, srcY + 2);
+                QRgb p13 = oldImage.pixel(srcX, srcY + 2);
+                QRgb p23 = oldImage.pixel(srcX + 1, srcY + 2);
+                QRgb p33 = oldImage.pixel(srcX + 2, srcY + 2);
+
+                double r0 = CubicInterpolation( relativeX, qRed(p00), qRed(p10), qRed(p20), qRed(p30) );
+                double r1 = CubicInterpolation( relativeX, qRed(p01), qRed(p11), qRed(p21), qRed(p31) );
+                double r2 = CubicInterpolation( relativeX, qRed(p02), qRed(p12), qRed(p22), qRed(p32) );
+                double r3 = CubicInterpolation( relativeX, qRed(p03), qRed(p13), qRed(p23), qRed(p33) );
+                int r = qMax(0.0, qMin(255.0, CubicInterpolation(relativeY, r0, r1, r2, r3)));
+                double g0 = CubicInterpolation( relativeX, qGreen(p00), qGreen(p10), qGreen(p20), qGreen(p30) );
+                double g1 = CubicInterpolation( relativeX, qGreen(p01), qGreen(p11), qGreen(p21), qGreen(p31) );
+                double g2 = CubicInterpolation( relativeX, qGreen(p02), qGreen(p12), qGreen(p22), qGreen(p32) );
+                double g3 = CubicInterpolation( relativeX, qGreen(p03), qGreen(p13), qGreen(p23), qGreen(p33) );
+                int g = qMax(0.0, qMin(255.0, CubicInterpolation(relativeY, g0, g1, g2, g3)));
+                double b0 = CubicInterpolation( relativeX, qBlue(p00), qBlue(p10), qBlue(p20), qBlue(p30) );
+                double b1 = CubicInterpolation( relativeX, qBlue(p01), qBlue(p11), qBlue(p21), qBlue(p31) );
+                double b2 = CubicInterpolation( relativeX, qBlue(p02), qBlue(p12), qBlue(p22), qBlue(p32) );
+                double b3 = CubicInterpolation( relativeX, qBlue(p03), qBlue(p13), qBlue(p23), qBlue(p33) );
+                int b = qMax(0.0, qMin(255.0, CubicInterpolation(relativeY, b0, b1, b2, b3)));
+
+                image.setPixel(i, j, qRgb(r, g, b));
+            }
+        }
+    }
+
+    QPixmap pixmap;
+    pixmap.convertFromImage(image);
+
+    pixmapItem_2->setPixmap(pixmap);
+    scene_2->setSceneRect(QRectF(pixmap.rect()));
+
+    calcHist(pixmap, hist_2, maxLevel_2);
+    drawHist(pixmapItem_4, hist_2, maxLevel_2);
+}
+
+void MainWindow::on_actionBinary_partition_triggered()
+{
+
+}
+
+void MainWindow::writeBits(int n, QBitArray &arr, int from, int to)
+{
+    for(int k = from; k < to; ++k)
+    {
+        int mask =  1 << k;
+        int masked_n = n & mask;
+        int thebit = masked_n >> k;
+        arr[k] = thebit;
+    }
+}
+
+std::vector<int> MainWindow::colHist(QPixmap &pixmap)
+{
+    std::vector<int> res(64, 0);
+    QImage img = pixmap.toImage();
+
+    for (int y = 0; y < img.height(); ++y)
+    {
+        for (int x = 0; x < img.width(); ++x)
+        {
+            QRgb pixel = img.pixel(x, y);
+            QBitArray bArr(3 * 8);
+            writeBits(qRed(pixel), bArr, 0, 7);
+            writeBits(qGreen(pixel), bArr, 8, 15);
+            writeBits(qBlue(pixel), bArr, 16, 23);
+            int i = (int) bArr[6] + (int) bArr[7] * 2 + (int) bArr[14] * 4
+                  + (int) bArr[15] * 8 + (int) bArr[22] * 16 + (int) bArr[23] * 32;
+            ++res[i];
+        }
+    }
+
+    return res;
+}
+
+double MainWindow::histDistance(std::vector<int> &hist1, std::vector<int> &hist2)
+{
+    int size = hist1.size();
+    std::vector<int> dists(size);
+    for (int i = 0; i < size; ++i)
+        dists[i] = qAbs(hist1[i] - hist2[i]);
+
+    std::vector<double> tmp(dists.size());
+
+    for (int j = 0; j < size; ++j)
+    {
+        double sum = 0.0;
+        for (int i = 0; i < size; ++i)
+            sum += dists[j] * mA[i][j];
+        tmp[j] = sum;
+    }
+
+    double sum = 0.0;
+    for (int i = 0; i < size; ++i)
+        sum += dists[i] * tmp[i];
+    double res = qSqrt(sum);
+    return res;
+}
+
+void MainWindow::on_actionColor_histogram_triggered()
+{
+    QPixmap pixmap = pixmapItem->pixmap().copy();
+
+    QImage image = pixmap.toImage();
+    int width = image.width();
+    int height = image.height();
+
+    if (width == 0 || height == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
+
+    int threshold = 180000;
+    picturesR.clear();
+    QString dirName = QFileDialog::getExistingDirectory(this, tr("Choose directory") );
+    QDir dir(dirName);
+    QDirIterator it(dir.absolutePath(), QDir::Files);
+    std::vector<int> origHist = colHist(pixmap);
+    for ( ; it.hasNext(); it.next() )
+    {
+        QString curFileName = it.filePath();
+        QPixmap curPixmap(curFileName);
+        if ( curPixmap.isNull() )
+            continue;
+        std::vector<int> curHist = colHist(curPixmap);
+        double dist = histDistance(origHist, curHist);
+
+        if (dist < threshold)
+            picturesR.append(curPixmap);
+    }
+
+    QString mes = tr("Images: ") + QString::number(picturesR.size());
+    ui->statusBar->showMessage(mes, 3000);
+    if (picturesR.size() > 0)
+    {
+        picturesRind = 0;
+        pixmapItem_2->setPixmap(picturesR[0]);
+        scene_2->setSceneRect(QRectF(picturesR[0].rect()));
+    }
+}
+
+std::vector<double> MainWindow::hist2(QPixmap &pixmap, int size1, int size2)
+{
+    std::vector<double> res(size1 + size2);
+    QImage img = pixmap.toImage();
+
+    int xMin = img.width();
+    int xMax = -1;
+    int yMin = img.height();
+    int yMax = -1;
+
+    for (int y = 0; y < img.height(); ++y)
+    {
+        for (int x = 0; x < img.width(); ++x)
+        {
+            if ( qRed( img.pixel(x, y) ) > 50)
+                continue;
+
+            if (x < xMin)
+                xMin = x;
+            else if (x > xMax)
+                xMax = x;
+        }
+        if (y < yMin)
+            yMin = y;
+        else if (y > yMax)
+            yMax = y;
+    }
+
+    double xScale = (double)(xMax - xMin) / size1;
+    double yScale = (double)(yMax - yMin) / size2;
+
+    int count = 0;
+    for (int x = xMin; x < xMax + 1; ++x)
+    {
+        for (int y = yMin; y < yMax + 1; ++y)
+        {
+            if ( qRed( img.pixel(x, y) ) > 50)
+                continue;
+
+            int xInd = (int)qMin((x - xMin) / xScale, (double) res.size() - 1);
+            int yInd = (int)qMin((y - yMin) / yScale + size1, (double) res.size() - 1);
+
+            ++res[xInd];
+            ++res[yInd];
+            ++count;
+        }
+    }
+
+    for (int i = 0; i < (int) res.size(); ++i)
+        res[i] /= (double) count;
+
+    return res;
+}
+
+double MainWindow::histDistance2(std::vector<double> &hist1, std::vector<double> &hist2)
+{
+    int size = hist1.size();
+    double sum = 0.0;
+    for (int i = 0; i < size; ++i)
+        sum += qAbs(hist1[i] - hist2[i]);
+    return sum;
+}
+
+void MainWindow::on_actionShape_histogram_distance_triggered()
+{
+    QPixmap pixmap = pixmapItem->pixmap().copy();
+
+    QImage image = pixmap.toImage();
+    int width = image.width();
+    int height = image.height();
+
+    if (width == 0 || height == 0)
+    {
+        ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+        return;
+    }
+
+    double threshold = 0.8;
+    picturesR.clear();
+    QString dirName = QFileDialog::getExistingDirectory(this, tr("Choose directory") );
+    QDir dir(dirName);
+    QDirIterator it(dir.absolutePath(), QDir::Files);
+    std::vector<double> origHist = hist2(pixmap, 20, 20);
+    for ( ; it.hasNext(); it.next() )
+    {
+        QString curFileName = it.filePath();
+        QPixmap curPixmap(curFileName);
+        if ( curPixmap.isNull() )
+            continue;
+        std::vector<double> curHist = hist2(curPixmap, 20, 20);
+        double dist = histDistance2(origHist, curHist);
+
+        qDebug() << dist;
+        if (dist < threshold)
+            picturesR.append(curPixmap);
+    }
+
+    QString mes = tr("Images: ") + QString::number(picturesR.size());
+    ui->statusBar->showMessage(mes, 3000);
+    if (picturesR.size() > 0)
+    {
+        picturesRind = 0;
+        pixmapItem_2->setPixmap(picturesR[0]);
+        scene_2->setSceneRect(QRectF(picturesR[0].rect()));
+    }
 }

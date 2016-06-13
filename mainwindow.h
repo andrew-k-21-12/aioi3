@@ -5,6 +5,8 @@
 #include <QGraphicsScene>
 #include <QGraphicsPixmapItem>
 #include <QImage>
+#include <vector>
+#include <QList>
 
 namespace Ui {
 class MainWindow;
@@ -56,6 +58,14 @@ private slots:
 
     void on_actionPiecewise_linear_triggered();
 
+    void on_actionZoom_triggered();
+
+    void on_actionBinary_partition_triggered();
+
+    void on_actionColor_histogram_triggered();
+
+    void on_actionShape_histogram_distance_triggered();
+
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;
@@ -71,6 +81,15 @@ private:
     int maxLevel;
     int maxLevel_2;
     QString pieceWiseLinearText;
+    std::vector< std::vector<double> > mA;
+    QList<QPixmap> picturesR;
+    int picturesRind;
+
+    double histDistance(std::vector<int> &hist1, std::vector<int> &hist2);
+    std::vector<int> colHist(QPixmap &pixmap);
+    void writeBits(int n, QBitArray &arr, int from, int to);
+    std::vector<double> hist2(QPixmap &pixmap, int size1, int size2);
+    double histDistance2(std::vector<double> &hist1, std::vector<double> &hist2);
 };
 
 #endif // MAINWINDOW_H

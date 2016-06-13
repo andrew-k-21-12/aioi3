@@ -11,6 +11,9 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = aioi3
 TEMPLATE = app
 
+LIBS += `pkg-config opencv --libs`
+
+CONFIG += c++11
 
 SOURCES += main.cpp\
         mainwindow.cpp \
@@ -21,7 +24,8 @@ SOURCES += main.cpp\
     dialoghistogramnormalization.cpp \
     dialoghistogramequalization.cpp \
     dialoggammacorrection.cpp \
-    dialogpiecewiselinear.cpp
+    dialogpiecewiselinear.cpp \
+    dialogzoom.cpp
 
 HEADERS  += mainwindow.h \
     dialogbinarization.h \
@@ -31,7 +35,8 @@ HEADERS  += mainwindow.h \
     dialoghistogramnormalization.h \
     dialoghistogramequalization.h \
     dialoggammacorrection.h \
-    dialogpiecewiselinear.h
+    dialogpiecewiselinear.h \
+    dialogzoom.h
 
 FORMS    += mainwindow.ui \
     dialogbinarization.ui \
@@ -41,7 +46,8 @@ FORMS    += mainwindow.ui \
     dialoghistogramnormalization.ui \
     dialoghistogramequalization.ui \
     dialoggammacorrection.ui \
-    dialogpiecewiselinear.ui
+    dialogpiecewiselinear.ui \
+    dialogzoom.ui
 
 RESOURCES += \
     resources.qrc

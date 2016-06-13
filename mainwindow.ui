@@ -32,7 +32,7 @@
     <item row="1" column="1">
      <widget class="QLabel" name="label_2">
       <property name="text">
-       <string>Converted Image</string>
+       <string>Result Image</string>
       </property>
      </widget>
     </item>
@@ -152,9 +152,32 @@
     <addaction name="actionBrightness_normalization"/>
     <addaction name="actionHistogram_equalization"/>
    </widget>
+   <widget class="QMenu" name="menuTransform">
+    <property name="title">
+     <string>Transform</string>
+    </property>
+    <addaction name="actionZoom"/>
+   </widget>
+   <widget class="QMenu" name="menuTexture">
+    <property name="title">
+     <string>Texture</string>
+    </property>
+    <addaction name="actionBinary_partition"/>
+    <addaction name="actionEdge"/>
+   </widget>
+   <widget class="QMenu" name="menuRetrieval">
+    <property name="title">
+     <string>Retrieval</string>
+    </property>
+    <addaction name="actionColor_histogram"/>
+    <addaction name="actionShape_histogram_distance"/>
+   </widget>
    <addaction name="menuImage"/>
    <addaction name="menuImage_Conversion"/>
    <addaction name="menuColor_correction"/>
+   <addaction name="menuTransform"/>
+   <addaction name="menuTexture"/>
+   <addaction name="menuRetrieval"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -253,6 +276,31 @@
   <action name="actionPiecewise_linear">
    <property name="text">
     <string>Piecewise linear</string>
+   </property>
+  </action>
+  <action name="actionZoom">
+   <property name="text">
+    <string>Zoom</string>
+   </property>
+  </action>
+  <action name="actionBinary_partition">
+   <property name="text">
+    <string>Binary partition</string>
+   </property>
+  </action>
+  <action name="actionEdge">
+   <property name="text">
+    <string>Edge</string>
+   </property>
+  </action>
+  <action name="actionColor_histogram">
+   <property name="text">
+    <string>Color histogram</string>
+   </property>
+  </action>
+  <action name="actionShape_histogram_distance">
+   <property name="text">
+    <string>Shape histogram (distance)</string>
    </property>
   </action>
  </widget>
