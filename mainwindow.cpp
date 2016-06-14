@@ -76,24 +76,15 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     maxLevel = 0;
     maxLevel_2 = 0;
-    this->setWindowTitle(tr("Kazaryan Paint"));
+    this->setWindowTitle(tr("Поиск по шаблону"));
     scene = new QGraphicsScene(this);
     pixmapItem = scene->addPixmap(QPixmap());
     ui->graphicsView->setScene(scene);
     scene_2 = new QGraphicsScene(this);
     pixmapItem_2 = scene_2->addPixmap(QPixmap());
-    ui->graphicsView_2->setScene(scene_2);
     ui->graphicsView->installEventFilter(this);
-    ui->graphicsView_2->installEventFilter(this);
-    ui->graphicsView_3->installEventFilter(this);
-    ui->graphicsView_4->installEventFilter(this);
-    //
-    sceneHist = new QGraphicsScene(this);
-    pixmapItem_3 = sceneHist->addPixmap(QPixmap());
-    ui->graphicsView_3->setScene(sceneHist);
-    sceneHist_2 = new QGraphicsScene(this);
-    pixmapItem_4 = sceneHist_2->addPixmap(QPixmap());
-    ui->graphicsView_4->setScene(sceneHist_2);
+
+
 
     mA.assign(64, std::vector<double>(64, 0));
     for (int i = 0; i < 64; ++i)
@@ -109,29 +100,10 @@ MainWindow::MainWindow(QWidget *parent) :
             mA[i][j] = r / 8.0;
         }
 
-    // Connections
-    connect(ui->graphicsView->horizontalScrollBar(),
-            SIGNAL(valueChanged(int)),
-            ui->graphicsView_2->horizontalScrollBar(),
-            SLOT(setValue(int)));
-    connect(ui->graphicsView_2->horizontalScrollBar(),
-            SIGNAL(valueChanged(int)),
-            ui->graphicsView->horizontalScrollBar(),
-            SLOT(setValue(int)));
-    connect(ui->graphicsView->verticalScrollBar(),
-            SIGNAL(valueChanged(int)),
-            ui->graphicsView_2->verticalScrollBar(),
-            SLOT(setValue(int)));
-    connect(ui->graphicsView_2->verticalScrollBar(),
-            SIGNAL(valueChanged(int)),
-            ui->graphicsView->verticalScrollBar(),
-            SLOT(setValue(int)));
 }
 
 MainWindow::~MainWindow()
 {
-    delete sceneHist_2;
-    delete sceneHist;
     delete scene_2;
     delete scene;
     delete ui;
@@ -139,21 +111,15 @@ MainWindow::~MainWindow()
 
 bool MainWindow::eventFilter(QObject *object, QEvent *event)
 {
-    if (ui->checkBox->isChecked() && object == ui->graphicsView && event->type() == QEvent::Paint)
-        ui->graphicsView->fitInView(pixmapItem, Qt::KeepAspectRatio);
-    if (ui->checkBox->isChecked() && object == ui->graphicsView_2 && event->type() == QEvent::Paint)
-        ui->graphicsView_2->fitInView(pixmapItem_2, Qt::KeepAspectRatio);
-    if (object == ui->graphicsView_3 && event->type() == QEvent::Paint)
-        drawHist(pixmapItem_3, hist, maxLevel);
-    if (object == ui->graphicsView_4 && event->type() == QEvent::Paint)
-        drawHist(pixmapItem_4, hist_2, maxLevel_2);
-    if (object == ui->graphicsView_2 && event->type() == QEvent::MouseButtonPress)
-    {
-        ++picturesRind;
-        int curInd = picturesRind % picturesR.size();
-        pixmapItem_2->setPixmap(picturesR[curInd]);
-        scene_2->setSceneRect(QRectF(picturesR[curInd].rect()));
-    }
+    // ПО-ДРУГОМУ РЕЗУЛЬТАТЫ!
+
+//    if (object == ui->graphicsView_2 && event->type() == QEvent::MouseButtonPress)
+//    {
+//        ++picturesRind;
+//        int curInd = picturesRind % picturesR.size();
+//        pixmapItem_2->setPixmap(picturesR[curInd]);
+//        scene_2->setSceneRect(QRectF(picturesR[curInd].rect()));
+//    }
     return false;
 }
 
@@ -168,10 +134,7 @@ void MainWindow::on_actionLoad_triggered()
         QPixmap pixmapEmpty;
         pixmapItem_2->setPixmap(pixmapEmpty);
         scene_2->setSceneRect(QRectF(pixmapEmpty.rect()));
-        calcHist(pixmap, hist, maxLevel);
-        drawHist(pixmapItem_3, hist, maxLevel);
-        hist_2.assign(256, 0);
-        drawHist(pixmapItem_4, hist_2, maxLevel_2);
+
     }
     else
         ui->statusBar->showMessage(tr("File loading error"), 3000);
@@ -201,8 +164,6 @@ void MainWindow::on_actionGrayscale_triggered()
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
 
-    calcHist(pixmap, hist_2, maxLevel_2);
-    drawHist(pixmapItem_4, hist_2, maxLevel_2);
 }
 
 int MainWindow::otsu(QImage &image, std::vector<int> &grays, int startX, int startY, int endX, int endY)
@@ -293,18 +254,6 @@ void MainWindow::on_actionOtsu_global_triggered()
 
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
-
-    calcHist(pixmap, hist_2, maxLevel_2);
-    drawHist(pixmapItem_4, hist_2, maxLevel_2);
-}
-
-void MainWindow::on_actionSave_triggered()
-{
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Image"));
-    if ( pixmapItem_2->pixmap().save(fileName) )
-        ui->statusBar->showMessage(tr("File saved successful!"), 3000);
-    else
-        ui->statusBar->showMessage(tr("File saving error"), 3000);
 }
 
 void MainWindow::on_actionBrightness_gradient_triggered()
@@ -385,28 +334,10 @@ void MainWindow::on_actionBrightness_gradient_triggered()
 
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
-
-    calcHist(pixmap, hist_2, maxLevel_2);
-    drawHist(pixmapItem_4, hist_2, maxLevel_2);
 }
 
 
 
-
-
-void MainWindow::on_checkBox_toggled(bool checked)
-{
-    if (checked)
-    {
-        ui->graphicsView->fitInView(pixmapItem, Qt::KeepAspectRatio);
-        ui->graphicsView_2->fitInView(pixmapItem_2, Qt::KeepAspectRatio);
-    }
-    else
-    {
-        ui->graphicsView->resetTransform();
-        ui->graphicsView_2->resetTransform();
-    }
-}
 
 
 
@@ -468,9 +399,6 @@ void MainWindow::on_actionGray_world_triggered()
 
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
-
-    calcHist(pixmap, hist_2, maxLevel_2);
-    drawHist(pixmapItem_4, hist_2, maxLevel_2);
 }
 
 void MainWindow::on_actionLinear_triggered()
@@ -541,9 +469,6 @@ void MainWindow::on_actionLinear_triggered()
 
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
-
-    calcHist(pixmap, hist_2, maxLevel_2);
-    drawHist(pixmapItem_4, hist_2, maxLevel_2);
 }
 
 
@@ -594,9 +519,6 @@ void MainWindow::on_actionBrightness_normalization_triggered()
 
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
-
-    calcHist(pixmap, hist_2, maxLevel_2);
-    drawHist(pixmapItem_4, hist_2, maxLevel_2);
 }
 
 void RGB_equalization(QImage &image)
@@ -797,9 +719,6 @@ void MainWindow::on_actionLg_triggered()
 
     pixmapItem_2->setPixmap(pixmap);
     scene_2->setSceneRect(QRectF(pixmap.rect()));
-
-    calcHist(pixmap, hist_2, maxLevel_2);
-    drawHist(pixmapItem_4, hist_2, maxLevel_2);
 }
 
 double CubicInterpolation(double x, double f0, double f1, double f2, double f3)
@@ -869,7 +788,7 @@ double MainWindow::histDistance(std::vector<int> &hist1, std::vector<int> &hist2
     return res;
 }
 
-void MainWindow::on_actionColor_histogram_triggered()
+void MainWindow::on_actionColorHistogramTriggered()
 {
     QPixmap pixmap = pixmapItem->pixmap().copy();
 
@@ -975,7 +894,7 @@ double MainWindow::histDistance2(std::vector<double> &hist1, std::vector<double>
     return sum;
 }
 
-void MainWindow::on_actionShape_histogram_distance_triggered()
+void MainWindow::on_actionShapeHistogramDistanceTriggered()
 {
     QPixmap pixmap = pixmapItem->pixmap().copy();
 

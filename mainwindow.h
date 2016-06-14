@@ -30,11 +30,7 @@ private slots:
 
     void on_actionOtsu_global_triggered();
 
-    void on_actionSave_triggered();
-
     void on_actionBrightness_gradient_triggered();
-
-    void on_checkBox_toggled(bool checked);
 
     void on_actionGray_world_triggered();
 
@@ -44,20 +40,16 @@ private slots:
 
     void on_actionLg_triggered();
 
-    void on_actionColor_histogram_triggered();
+    void on_actionColorHistogramTriggered();
 
-    void on_actionShape_histogram_distance_triggered();
+    void on_actionShapeHistogramDistanceTriggered();
 
 private:
     Ui::MainWindow *ui;
     QGraphicsScene *scene;
     QGraphicsScene *scene_2;
-    QGraphicsScene *sceneHist;
-    QGraphicsScene *sceneHist_2;
     QGraphicsPixmapItem *pixmapItem;
     QGraphicsPixmapItem *pixmapItem_2;
-    QGraphicsPixmapItem *pixmapItem_3;
-    QGraphicsPixmapItem *pixmapItem_4;
     std::vector<int> hist;
     std::vector<int> hist_2;
     int maxLevel;
