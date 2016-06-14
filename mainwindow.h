@@ -28,39 +28,21 @@ private slots:
 
     void on_actionGrayscale_triggered();
 
-    void on_actionBinarization_manual_triggered();
-
     void on_actionOtsu_global_triggered();
 
     void on_actionSave_triggered();
 
     void on_actionBrightness_gradient_triggered();
 
-    void on_actionOtsu_local_triggered();
-
-    void on_actionBrightness_quantization_triggered();
-
     void on_checkBox_toggled(bool checked);
-
-    void on_actionBase_color_correction_triggered();
 
     void on_actionGray_world_triggered();
 
     void on_actionLinear_triggered();
 
-    void on_actionGamma_correction_triggered();
-
     void on_actionBrightness_normalization_triggered();
 
-    void on_actionHistogram_equalization_triggered();
-
     void on_actionLg_triggered();
-
-    void on_actionPiecewise_linear_triggered();
-
-    void on_actionZoom_triggered();
-
-    void on_actionBinary_partition_triggered();
 
     void on_actionColor_histogram_triggered();
 

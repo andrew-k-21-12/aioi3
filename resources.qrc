@@ -1,6 +1,0 @@
-<RCC>
-    <qresource prefix="/icons">
-        <file>document-open.svg</file>
-        <file>document-save-as.svg</file>
-    </qresource>
-</RCC>
