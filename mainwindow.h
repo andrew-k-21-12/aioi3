@@ -76,40 +76,9 @@ private:
         }
     }
 
-    double histDistance(std::vector<int> &hist1, std::vector<int> &hist2)
-    {
-        int size = hist1.size();
-        std::vector<int> dists(size);
-        for (int i = 0; i < size; ++i)
-            dists[i] = qAbs(hist1[i] - hist2[i]);
 
-        std::vector<double> tmp(dists.size());
 
-        for (int j = 0; j < size; ++j)
-        {
-            double sum = 0.0;
-            for (int i = 0; i < size; ++i)
-                sum += dists[j] * mA[i][j];
-            tmp[j] = sum;
-        }
-
-        double sum = 0.0;
-        for (int i = 0; i < size; ++i)
-            sum += dists[i] * tmp[i];
-        double res = qSqrt(sum);
-        return res;
-    }
-
-    double histDistance2(std::vector<double> &hist1, std::vector<double> &hist2)
-    {
-        int size = hist1.size();
-        double sum = 0.0;
-        for (int i = 0; i < size; ++i)
-            sum += qAbs(hist1[i] - hist2[i]);
-        return sum;
-    }
-
-    std::vector<int> colHist(QPixmap &pixmap)
+    std::vector<int> histProj(QPixmap &pixmap)
     {
         std::vector<int> res(64, 0);
         QImage img = pixmap.toImage();
@@ -132,7 +101,35 @@ private:
         return res;
     }
 
-    std::vector<double> hist2(QPixmap &pixmap, int size1, int size2)
+    double distHistProj(std::vector<int> &hist1, std::vector<int> &hist2)
+    {
+        // Гистограммы могут быть разных размеров - берем размер первой.
+        int size = hist1.size();
+        std::vector<int> dists(size);
+
+        for (int i = 0; i < size; ++i)
+            dists[i] = qAbs(hist1[i] - hist2[i]);
+
+        std::vector<double> tmp(dists.size());
+
+        for (int j = 0; j < size; ++j)
+        {
+            double sum = 0.0;
+            for (int i = 0; i < size; ++i)
+                sum += dists[j] * mA[i][j];
+            tmp[j] = sum;
+        }
+
+        double sum = 0.0;
+        for (int i = 0; i < size; ++i)
+            sum += dists[i] * tmp[i];
+        double res = qSqrt(sum);
+        return res;
+    }
+
+
+
+    std::vector<double> histCol(QPixmap &pixmap, int size1, int size2)
     {
         std::vector<double> res(size1 + size2);
         QImage img = pixmap.toImage();
@@ -184,6 +181,15 @@ private:
             res[i] /= (double) count;
 
         return res;
+    }
+
+    double distHistCol(std::vector<double> &hist1, std::vector<double> &hist2)
+    {
+        int size = hist1.size();
+        double sum = 0.0;
+        for (int i = 0; i < size; ++i)
+            sum += qAbs(hist1[i] - hist2[i]);
+        return sum;
     }
 
 
@@ -258,38 +264,53 @@ private slots:
 
     void on_actionColorHistogram_triggered()
     {
+        // Берем копию загруженного изображения для работы.
         QPixmap pixmap = mPixmapItem->pixmap().copy();
-
         QImage image = pixmap.toImage();
         int width = image.width();
         int height = image.height();
 
         if (width == 0 || height == 0)
         {
-            mUi->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+            mUi->statusBar->showMessage( tr("Ошибка изображения"), 3000 );
             return;
         }
 
+
+        // !!!
         int threshold = 180000;
+        // !!!
+
+
+        // Чистим прежние результаты и получаем директорию для новых.
         mFoundPicturesFiles.clear();
-        QString dirName = QFileDialog::getExistingDirectory(this, tr("Choose directory") );
+        QString dirName = QFileDialog::getExistingDirectory(this, tr("Выберите директорию для поиска похожих") );
         QDir dir(dirName);
+        // Для итераций по всем файлам в директории.
         QDirIterator it(dir.absolutePath(), QDir::Files);
-        std::vector<int> origHist = colHist(pixmap);
-        for ( ; it.hasNext(); it.next() )
+
+        // Гистограмма открытого изображения.
+        std::vector<int> origHist = histProj(pixmap);
+
+        // Проходимся по всем файлам в папке.
+        for (; it.hasNext(); it.next())
         {
             QString curFileName = it.filePath();
+
+            // Строим для картинки (только!) гистограмму.
             QPixmap curPixmap(curFileName);
             if ( curPixmap.isNull() )
                 continue;
-            std::vector<int> curHist = colHist(curPixmap);
-            double dist = histDistance(origHist, curHist);
+            std::vector<int> curHist = histProj(curPixmap);
+
+            // Смотрим разницу гистограмм.
+            double dist = distHistProj(origHist, curHist);
 
             if (dist < threshold)
                 mFoundPicturesFiles.append(curFileName);
         }
 
-        QString mes = tr("Images: ") + QString::number(mFoundPicturesFiles.size());
+        QString mes = tr("Найдено изображений: ") + QString::number(mFoundPicturesFiles.size());
         mUi->statusBar->showMessage(mes, 3000);
 
 
@@ -298,39 +319,57 @@ private slots:
 
     void on_actionShapeHistogramDistance_triggered()
     {
+        // Копируем текущую картинку.
         QPixmap pixmap = mPixmapItem->pixmap().copy();
-
         QImage image = pixmap.toImage();
         int width = image.width();
         int height = image.height();
-
         if (width == 0 || height == 0)
         {
-            mUi->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+            mUi->statusBar->showMessage( tr("Ой! Что-то не так с картинкой!"), 3000 );
             return;
         }
 
+
+        // !!!
         double threshold = 0.8;
+        // !!!
+
+
+        // Чистим прошлые результаты.
         mFoundPicturesFiles.clear();
-        QString dirName = QFileDialog::getExistingDirectory(this, tr("Choose directory") );
+        QString dirName = QFileDialog::getExistingDirectory(this, tr("Где искать-то будем?") );
         QDir dir(dirName);
         QDirIterator it(dir.absolutePath(), QDir::Files);
-        std::vector<double> origHist = hist2(pixmap, 20, 20);
-        for ( ; it.hasNext(); it.next() )
+
+
+        // !!!
+        std::vector<double> origHist = histCol(pixmap, 20, 20);
+        // !!!
+
+
+        // Для всех картинок в папке смотрим гистограммы.
+        for (; it.hasNext(); it.next())
         {
             QString curFileName = it.filePath();
             QPixmap curPixmap(curFileName);
             if ( curPixmap.isNull() )
                 continue;
-            std::vector<double> curHist = hist2(curPixmap, 20, 20);
-            double dist = histDistance2(origHist, curHist);
 
-            // qDebug() << dist;
+
+            // !!!
+            std::vector<double> curHist = histCol(curPixmap, 20, 20);
+            // !!!
+
+            // !!!
+            double dist = distHistCol(origHist, curHist);
+            // !!!
+
             if (dist < threshold)
                 mFoundPicturesFiles.append(curFileName);
         }
 
-        QString mes = tr("Images: ") + QString::number(mFoundPicturesFiles.size());
+        QString mes = tr("Найдено изображений: ") + QString::number(mFoundPicturesFiles.size());
         mUi->statusBar->showMessage(mes, 3000);
 
 

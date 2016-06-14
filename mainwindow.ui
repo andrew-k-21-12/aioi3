@@ -132,12 +132,12 @@
   </action>
   <action name="actionColorHistogram">
    <property name="text">
-    <string>Поиск по цвет. гист.</string>
+    <string>Проекционное сопоставление (гист.)</string>
    </property>
   </action>
   <action name="actionShapeHistogramDistance">
    <property name="text">
-    <string>Поиск по цвет. гист. (дист.)</string>
+    <string>Близость цветов (гист.)</string>
    </property>
   </action>
   <action name="actionLoad">
