@@ -1,11 +1,12 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <vector>
+
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <QGraphicsPixmapItem>
 #include <QImage>
-#include <vector>
 #include <QList>
 
 namespace Ui {
@@ -17,34 +18,22 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
+
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
     bool eventFilter(QObject *object, QEvent *event);
 
-    int otsu(QImage &image, std::vector<int> &grays, int startX, int startY, int endX, int endY);
-
 private slots:
+
     void on_actionLoad_triggered();
 
-    void on_actionGrayscale_triggered();
+    void on_actionColorHistogram_triggered();
 
-    void on_actionOtsu_global_triggered();
-
-    void on_actionBrightness_gradient_triggered();
-
-    void on_actionGray_world_triggered();
-
-    void on_actionLinear_triggered();
-
-    void on_actionBrightness_normalization_triggered();
-
-    void on_actionLg_triggered();
-
-    void on_actionColorHistogramTriggered();
-
-    void on_actionShapeHistogramDistanceTriggered();
+    void on_actionShapeHistogramDistance_triggered();
 
 private:
+
     Ui::MainWindow *ui;
     QGraphicsScene *scene;
     QGraphicsScene *scene_2;
@@ -64,6 +53,7 @@ private:
     void writeBits(int n, QBitArray &arr, int from, int to);
     std::vector<double> hist2(QPixmap &pixmap, int size1, int size2);
     double histDistance2(std::vector<double> &hist1, std::vector<double> &hist2);
+
 };
 
 #endif // MAINWINDOW_H
