@@ -15,6 +15,8 @@ CONFIG += c++11
 
 SOURCES += main.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    resultdialog.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    resultdialog.ui

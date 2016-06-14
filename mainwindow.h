@@ -23,6 +23,8 @@
 #include <QScrollBar>
 #include <QPainter>
 
+#include "resultdialog.h"
+
 #include <QDebug>
 
 namespace Ui {
@@ -35,20 +37,44 @@ class MainWindow : public QMainWindow
 
 private:
 
-    Ui::MainWindow *ui;
-    QGraphicsScene *scene;
-    QGraphicsScene *scene_2;
-    QGraphicsPixmapItem *pixmapItem;
-    QGraphicsPixmapItem *pixmapItem_2;
-    std::vector<int> hist;
-    std::vector<int> hist_2;
-    int maxLevel;
-    int maxLevel_2;
-    QString pieceWiseLinearText;
-    std::vector< std::vector<double> > mA;
-    QList<QPixmap> picturesR;
-    int picturesRind;
+    Ui::MainWindow *mUi;
+    QGraphicsScene *mScene;
+    QGraphicsPixmapItem *mPixmapItem;
 
+    std::vector< std::vector<double> > mA;
+    QList<QString> mFoundPicturesFiles;
+
+
+
+    void resizeEvent(QResizeEvent* event)
+    {
+       QMainWindow::resizeEvent(event);
+
+       mUi->graphicsView->fitInView(mUi->graphicsView->scene()->sceneRect(), Qt::KeepAspectRatio);
+    }
+
+    void demonstrateResults(QList<QString>& foundPicturesFiles)
+    {
+        if (foundPicturesFiles.size() != 0)
+        {
+            ResultDialog d(foundPicturesFiles, this);
+            d.exec();
+        }
+    }
+
+
+
+    //! В заданный вектор битов в диапазоне от from до to записывает 1, если она также есть у n на той же позиции в битовом формате.
+    void writeBits(int n, QBitArray &arr, int from, int to)
+    {
+        for(int k = from; k <= to; ++k)
+        {
+            int mask =  1 << k;
+            int masked_n = n & mask;
+            int thebit = masked_n >> k;
+            arr[k] = thebit;
+        }
+    }
 
     double histDistance(std::vector<int> &hist1, std::vector<int> &hist2)
     {
@@ -74,6 +100,15 @@ private:
         return res;
     }
 
+    double histDistance2(std::vector<double> &hist1, std::vector<double> &hist2)
+    {
+        int size = hist1.size();
+        double sum = 0.0;
+        for (int i = 0; i < size; ++i)
+            sum += qAbs(hist1[i] - hist2[i]);
+        return sum;
+    }
+
     std::vector<int> colHist(QPixmap &pixmap)
     {
         std::vector<int> res(64, 0);
@@ -95,17 +130,6 @@ private:
         }
 
         return res;
-    }
-
-    void writeBits(int n, QBitArray &arr, int from, int to)
-    {
-        for(int k = from; k < to; ++k)
-        {
-            int mask =  1 << k;
-            int masked_n = n & mask;
-            int thebit = masked_n >> k;
-            arr[k] = thebit;
-        }
     }
 
     std::vector<double> hist2(QPixmap &pixmap, int size1, int size2)
@@ -162,45 +186,40 @@ private:
         return res;
     }
 
-    double histDistance2(std::vector<double> &hist1, std::vector<double> &hist2)
-    {
-        int size = hist1.size();
-        double sum = 0.0;
-        for (int i = 0; i < size; ++i)
-            sum += qAbs(hist1[i] - hist2[i]);
-        return sum;
-    }
-
 
 
 public:
 
     explicit MainWindow(QWidget *parent = 0) :
              QMainWindow(parent),
-             ui(new Ui::MainWindow)
+             mUi(new Ui::MainWindow)
     {
-        ui->setupUi(this);
-        maxLevel = 0;
-        maxLevel_2 = 0;
+        mUi->setupUi(this);
         this->setWindowTitle(tr("Поиск по шаблону"));
-        scene = new QGraphicsScene(this);
-        pixmapItem = scene->addPixmap(QPixmap());
-        ui->graphicsView->setScene(scene);
-        scene_2 = new QGraphicsScene(this);
-        pixmapItem_2 = scene_2->addPixmap(QPixmap());
-        ui->graphicsView->installEventFilter(this);
 
-        mA.assign(64, std::vector<double>(64, 0));
+        mScene = new QGraphicsScene(this);
+        mPixmapItem = mScene->addPixmap(QPixmap());
+        mUi->graphicsView->setScene(mScene);
+
+
+        /* Заменяем n элементов вектора (первое число в параметрах)
+         * на указанные во втором параметре (увеличиваем размер, если нужно). */
+        mA.assign(64, std::vector<double>(64, 0)); // инициализация с 64 нулями: второе число - чем заполнять
         for (int i = 0; i < 64; ++i)
             for (int j = 0; j < 64; ++j)
             {
+                /* Два байта, у которых все позиции заняты нулями, кроме тех,
+                 * которые совпадают с соответствующими позициями единиц в битовом формате i или j. */
                 QBitArray b1(8);
                 writeBits(i, b1, 0, 7);
                 QBitArray b2(8);
                 writeBits(j, b2, 0, 7);
+
+                // В r будет число, образованное как сумма всех несовпадений соответствующих битов в их массивах.
                 int r = 0;
                 for (int k = 0; k < b1.size(); ++k)
                     r += (int) (b1[k] ^ b2[k]);
+
                 mA[i][j] = r / 8.0;
             }
 
@@ -208,21 +227,7 @@ public:
 
     ~MainWindow()
     {
-        delete ui;
-    }
-
-    bool eventFilter(QObject *object, QEvent *event)
-    {
-        // ПО-ДРУГОМУ РЕЗУЛЬТАТЫ!
-
-    //    if (object == ui->graphicsView_2 && event->type() == QEvent::MouseButtonPress)
-    //    {
-    //        ++picturesRind;
-    //        int curInd = picturesRind % picturesR.size();
-    //        pixmapItem_2->setPixmap(picturesR[curInd]);
-    //        scene_2->setSceneRect(QRectF(picturesR[curInd].rect()));
-    //    }
-        return false;
+        delete mUi;
     }
 
 
@@ -231,24 +236,29 @@ private slots:
 
     void on_actionLoad_triggered()
     {
-        QString fileName = QFileDialog::getOpenFileName(this, tr("Open Image"));
-        QPixmap pixmap(fileName);
-        if ( ! pixmap.isNull() )
+        QString fileName = QFileDialog::getOpenFileName(this,
+                                                        tr("Выберите изображение для поиска"),
+                                                        QDir::currentPath(),
+                                                        tr("Изображения (*.png *.jpg *.bmp)"));
+        if (fileName.isEmpty())
         {
-            pixmapItem->setPixmap(pixmap);
-            scene->setSceneRect(QRectF(pixmap.rect()));
-            QPixmap pixmapEmpty;
-            pixmapItem_2->setPixmap(pixmapEmpty);
-            scene_2->setSceneRect(QRectF(pixmapEmpty.rect()));
-
+            mUi->statusBar->showMessage(tr("Не выбран файл для загрузки"), 3000);
+            return;
         }
-        else
-            ui->statusBar->showMessage(tr("File loading error"), 3000);
+
+        QPixmap pixmap(fileName);
+        if ( !pixmap.isNull() )
+        {
+            mPixmapItem->setPixmap(pixmap);
+            mScene->setSceneRect(pixmap.rect());
+            mUi->graphicsView->fitInView(pixmap.rect(), Qt::KeepAspectRatio);
+        } else
+            mUi->statusBar->showMessage(tr("Ошибка при загрузке изображения"), 3000);
     }
 
     void on_actionColorHistogram_triggered()
     {
-        QPixmap pixmap = pixmapItem->pixmap().copy();
+        QPixmap pixmap = mPixmapItem->pixmap().copy();
 
         QImage image = pixmap.toImage();
         int width = image.width();
@@ -256,12 +266,12 @@ private slots:
 
         if (width == 0 || height == 0)
         {
-            ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+            mUi->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
             return;
         }
 
         int threshold = 180000;
-        picturesR.clear();
+        mFoundPicturesFiles.clear();
         QString dirName = QFileDialog::getExistingDirectory(this, tr("Choose directory") );
         QDir dir(dirName);
         QDirIterator it(dir.absolutePath(), QDir::Files);
@@ -276,22 +286,19 @@ private slots:
             double dist = histDistance(origHist, curHist);
 
             if (dist < threshold)
-                picturesR.append(curPixmap);
+                mFoundPicturesFiles.append(curFileName);
         }
 
-        QString mes = tr("Images: ") + QString::number(picturesR.size());
-        ui->statusBar->showMessage(mes, 3000);
-        if (picturesR.size() > 0)
-        {
-            picturesRind = 0;
-            pixmapItem_2->setPixmap(picturesR[0]);
-            scene_2->setSceneRect(QRectF(picturesR[0].rect()));
-        }
+        QString mes = tr("Images: ") + QString::number(mFoundPicturesFiles.size());
+        mUi->statusBar->showMessage(mes, 3000);
+
+
+        demonstrateResults(mFoundPicturesFiles);
     }
 
     void on_actionShapeHistogramDistance_triggered()
     {
-        QPixmap pixmap = pixmapItem->pixmap().copy();
+        QPixmap pixmap = mPixmapItem->pixmap().copy();
 
         QImage image = pixmap.toImage();
         int width = image.width();
@@ -299,12 +306,12 @@ private slots:
 
         if (width == 0 || height == 0)
         {
-            ui->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
+            mUi->statusBar->showMessage( tr("Error. Image bad size"), 3000 );
             return;
         }
 
         double threshold = 0.8;
-        picturesR.clear();
+        mFoundPicturesFiles.clear();
         QString dirName = QFileDialog::getExistingDirectory(this, tr("Choose directory") );
         QDir dir(dirName);
         QDirIterator it(dir.absolutePath(), QDir::Files);
@@ -318,19 +325,16 @@ private slots:
             std::vector<double> curHist = hist2(curPixmap, 20, 20);
             double dist = histDistance2(origHist, curHist);
 
-            qDebug() << dist;
+            // qDebug() << dist;
             if (dist < threshold)
-                picturesR.append(curPixmap);
+                mFoundPicturesFiles.append(curFileName);
         }
 
-        QString mes = tr("Images: ") + QString::number(picturesR.size());
-        ui->statusBar->showMessage(mes, 3000);
-        if (picturesR.size() > 0)
-        {
-            picturesRind = 0;
-            pixmapItem_2->setPixmap(picturesR[0]);
-            scene_2->setSceneRect(QRectF(picturesR[0].rect()));
-        }
+        QString mes = tr("Images: ") + QString::number(mFoundPicturesFiles.size());
+        mUi->statusBar->showMessage(mes, 3000);
+
+
+        demonstrateResults(mFoundPicturesFiles);
     }
 
 };
