@@ -1,6 +1,8 @@
 #ifndef TANGENTHISTSEARCH
 #define TANGENTHISTSEARCH
 
+#include <map>
+
 #include <QString>
 #include <QList>
 #include <QDir>
@@ -19,7 +21,8 @@ class TangentHistSearch
 
 private:
 
-    qreal CONFIG_THRESHOLD = 0.15;
+    qreal CONFIG_THRESHOLD = 0.1755;
+    qreal CONFIG_MAX_SCALE_SIDE = 750;
 
 
 
@@ -33,7 +36,7 @@ public:
         QImage imgSrc = templateToSearch->pixmap().toImage().convertToFormat(QImage::Format_RGB888);
         // Это прямая копия imgSrc!
         cv::Mat matSrc(imgSrc.height(), imgSrc.width(), CV_8UC3, imgSrc.bits(), imgSrc.bytesPerLine());
-        std::vector<qreal> histSrc = evalHist(matSrc);
+        std::map<int, qreal> histSrc = evalHist(matSrc);
 
 
         // Фильтры, чтобы просматривать только изображения.
@@ -51,7 +54,7 @@ public:
             if (matCurrent.empty())
                 continue;
 
-            std::vector<qreal> histCurr = evalHist(matCurrent);
+            std::map<int, qreal> histCurr = evalHist(matCurrent);
 
             qreal difference = histDiff(histSrc, histCurr);
 
@@ -67,10 +70,10 @@ public:
 
 private:
 
-    std::vector<qreal> evalHist(cv::Mat& src)
+    std::map<int, qreal> evalHist(cv::Mat& src)
     {
-        // Восемь возможных переходов, по умолчанию пустота.
-        std::vector<qreal> result(8, 0);
+        // 56 возможных касательных, у каждой свой индекс.
+        std::map<int, qreal> result;
         int totalCount = 0;
 
         std::vector<std::vector<cv::Point> > contours = extractContours(src);
@@ -85,65 +88,36 @@ private:
             addTransitionsForContour(loopContour, totalCount, result);
         }
 
-        for (unsigned long i = 0; i < result.size(); ++i)
-            result[i] /= totalCount;
+        for (const auto &pair : result)
+        {
+            result[pair.first] /= totalCount;
+        }
+
+//        for (std::map<int, qreal>::iterator it = result.begin(); it != result.end(); ++it)
+//        {
+//            const int& key(it->first);
+//            result[key] /= totalCount;
+//        }
 
         return result;
     }
 
-    qreal histDiff(const std::vector<qreal>& hist1, const std::vector<qreal>& hist2)
+    qreal histDiff(std::map<int, qreal>& hist1, std::map<int, qreal>& hist2)
     {
         qreal totalDiff = 0;
 
-        for (unsigned long i = 0; i < hist1.size(); ++i)
+        for (const auto &pair : hist1)
         {
-            totalDiff += qAbs(hist1[i] - hist2[i]);
+            totalDiff += qAbs(hist1[pair.first] - hist2[pair.first]);
         }
+
+//        for (std::map<int, qreal>::iterator it = hist1.begin(); it != hist1.end(); ++it)
+//        {
+//            const int& key(it->first);
+//            totalDiff += qAbs(hist1[key] - hist2[key]);
+//        }
 
         return totalDiff;
-    }
-
-    void addTransitionsForContour(std::vector<cv::Point>& contour, int& total, std::vector<qreal>& transitions)
-    {
-        fillGapsInContour(contour);
-
-        for (unsigned long k = 1; k < contour.size(); ++k)
-        {
-            cv::Point& pPrev = contour.at(k - 1);
-            cv::Point& pCurr = contour.at(k);
-
-            // Числа от 0 до 2 включительно.
-            int xDiff = 1 + pCurr.x - pPrev.x;
-            int yDiff = 1 + pCurr.y - pPrev.y;
-
-            if (xDiff == 0)
-            {
-                if (yDiff == 0)
-                    transitions[0] += 1;
-                if (yDiff == 1)
-                    transitions[1] += 1;
-                if (yDiff == 2)
-                    transitions[2] += 1;
-
-            } else if (xDiff == 1)
-            {
-                if (yDiff == 0)
-                    transitions[3] += 1;
-                if (yDiff == 2)
-                    transitions[4] += 1;
-
-            } else
-            {
-                if (yDiff == 0)
-                    transitions[5] += 1;
-                if (yDiff == 1)
-                    transitions[6] += 1;
-                if (yDiff == 2)
-                    transitions[7] += 1;
-
-            }
-            ++total;
-        }
     }
 
     std::vector<std::vector<cv::Point> > extractContours(cv::Mat& matForContoursExtraction)
@@ -151,6 +125,14 @@ private:
         // Convert image to gray and blur it.
         // Эта операция отсоединяет прежние адреса - получается глубокая копия.
         cvtColor(matForContoursExtraction, matForContoursExtraction, CV_BGR2GRAY);
+
+        // Уменьшаем для ускорения.
+        qreal scale = CONFIG_MAX_SCALE_SIDE / (qreal) qMax(matForContoursExtraction.rows, matForContoursExtraction.cols);
+        cv::resize(matForContoursExtraction, matForContoursExtraction,
+                   cv::Size(matForContoursExtraction.cols * scale, matForContoursExtraction.rows * scale),
+                   0, 0, cv::INTER_CUBIC);
+
+        // Размываем.
         cv::blur(matForContoursExtraction, matForContoursExtraction, cv::Size(3, 3));
 
         // Находим границы (некоторые точки могут не соединяться друг с другом).
@@ -163,6 +145,30 @@ private:
 
 
         return contours;
+    }
+
+    void addTransitionsForContour(std::vector<cv::Point>& contour, int& total, std::map<int, qreal>& transitions)
+    {
+        fillGapsInContour(contour);
+
+        for (unsigned long k = 1; k < contour.size() - 1; ++k)
+        {
+            cv::Point& pPrev = contour.at(k - 1);
+            cv::Point& pCurr = contour.at(k);
+            cv::Point& pNext = contour.at(k + 1);
+
+            // Числа от 0 до 2 включительно.
+            int xPrevDiff = 1 + pCurr.x - pPrev.x;
+            int yPrevDiff = 1 + pCurr.y - pPrev.y;
+            int xNextDiff = 1 + pCurr.x - pNext.x;
+            int yNextDiff = 1 + pCurr.y - pNext.y;
+
+            int index = xPrevDiff + yPrevDiff * 10 + xNextDiff * 100 + yNextDiff * 1000;
+
+            transitions[index] += 1;
+
+            ++total;
+        }
     }
 
     void fillGapsInContour(std::vector<cv::Point>& contourPoints)
