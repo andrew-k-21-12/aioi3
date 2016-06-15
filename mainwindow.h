@@ -25,6 +25,7 @@
 
 #include "resultdialog.h"
 #include "tangenthistsearch.h"
+#include "textures.h"
 
 #include <QDebug>
 
@@ -409,6 +410,21 @@ private slots:
 
         TangentHistSearch ths;
         QList<QString> searchResults = ths.run(dirName, mPixmapItem);
+
+        demonstrateResults(searchResults);
+    }
+
+    void on_actionBinaryTextureSearch_triggered()
+    {
+        QString dirName = QFileDialog::getExistingDirectory(this, tr("Choose an image as a search template"));
+        if (dirName.isEmpty())
+        {
+            mUi->statusBar->showMessage(tr("You should choose some directory to look for images in!"), 3000);
+            return;
+        }
+
+        Textures textures;
+        QList<QString> searchResults = textures.run(dirName, mPixmapItem);
 
         demonstrateResults(searchResults);
     }

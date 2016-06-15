@@ -45,6 +45,7 @@
    <addaction name="actionColorHistogram"/>
    <addaction name="actionShapeHistogramDistance"/>
    <addaction name="actionTangentHistSearch"/>
+   <addaction name="actionBinaryTextureSearch"/>
   </widget>
   <action name="actionColorHistogram">
    <property name="text">
@@ -70,6 +71,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+K</string>
+   </property>
+  </action>
+  <action name="actionBinaryTextureSearch">
+   <property name="text">
+    <string>Поиск по бин. текст. гист.</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+B</string>
    </property>
   </action>
  </widget>
