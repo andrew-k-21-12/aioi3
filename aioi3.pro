@@ -13,10 +13,19 @@ TEMPLATE = app
 
 CONFIG += c++11
 
+macx {
+    INCLUDEPATH += /usr/local/opt/opencv3/include
+    CONFIG += link_pkgconfig
+    # PKGCONFIG += opencv
+}
+
+LIBS += `pkg-config opencv --libs`
+
 SOURCES += main.cpp
 
 HEADERS  += mainwindow.h \
-    resultdialog.h
+    resultdialog.h \
+    tangenthistsearch.h
 
 FORMS    += mainwindow.ui \
     resultdialog.ui

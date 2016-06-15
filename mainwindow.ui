@@ -44,92 +44,8 @@
    </attribute>
    <addaction name="actionColorHistogram"/>
    <addaction name="actionShapeHistogramDistance"/>
+   <addaction name="actionTangentHistSearch"/>
   </widget>
-  <action name="actionGrayscale">
-   <property name="text">
-    <string>Grayscale</string>
-   </property>
-  </action>
-  <action name="actionBinarization_manual">
-   <property name="text">
-    <string>Binarization (manual)</string>
-   </property>
-  </action>
-  <action name="actionOtsu_global">
-   <property name="text">
-    <string>Otsu (global)</string>
-   </property>
-  </action>
-  <action name="actionBrightness_gradient">
-   <property name="text">
-    <string>Brightness gradient</string>
-   </property>
-  </action>
-  <action name="actionOtsu_local">
-   <property name="text">
-    <string>Otsu (local)</string>
-   </property>
-  </action>
-  <action name="actionBrightness_quantization">
-   <property name="text">
-    <string>Brightness quantization</string>
-   </property>
-  </action>
-  <action name="actionBase_color_correction">
-   <property name="text">
-    <string>Base color correction</string>
-   </property>
-  </action>
-  <action name="actionGray_world">
-   <property name="text">
-    <string>Gray world</string>
-   </property>
-  </action>
-  <action name="actionLinear">
-   <property name="text">
-    <string>Linear</string>
-   </property>
-  </action>
-  <action name="actionGamma_correction">
-   <property name="text">
-    <string>Gamma correction</string>
-   </property>
-  </action>
-  <action name="actionBrightness_normalization">
-   <property name="text">
-    <string>Brightness normalization</string>
-   </property>
-  </action>
-  <action name="actionHistogram_equalization">
-   <property name="text">
-    <string>Histogram equalization</string>
-   </property>
-  </action>
-  <action name="actionLg">
-   <property name="text">
-    <string>Lg</string>
-   </property>
-  </action>
-  <action name="actionPiecewise_linear">
-   <property name="text">
-    <string>Piecewise linear</string>
-   </property>
-  </action>
-  <action name="actionZoom">
-   <property name="text">
-    <string>Zoom</string>
-   </property>
-  </action>
-  <action name="actionBinary_partition">
-   <property name="text">
-    <string>Binary partition</string>
-   </property>
-  </action>
-  <action name="actionEdge">
-   <property name="text">
-    <string>Edge</string>
-   </property>
-  </action>
   <action name="actionColorHistogram">
    <property name="text">
     <string>Проекционное сопоставление (гист.)</string>
@@ -146,6 +62,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionTangentHistSearch">
+   <property name="text">
+    <string>Искать по касательным контуров</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+K</string>
    </property>
   </action>
  </widget>

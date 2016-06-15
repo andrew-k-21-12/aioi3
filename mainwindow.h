@@ -24,6 +24,7 @@
 #include <QPainter>
 
 #include "resultdialog.h"
+#include "tangenthistsearch.h"
 
 #include <QDebug>
 
@@ -60,6 +61,10 @@ private:
             ResultDialog d(foundPicturesFiles, this);
             d.exec();
         }
+        else
+        {
+            mUi->statusBar->showMessage(tr("No results were found!"), 3000);
+        }
     }
 
 
@@ -80,33 +85,47 @@ private:
 
     std::vector<int> histProj(QPixmap &pixmap)
     {
-        std::vector<int> res(64, 0);
+        // Берем картинку.
         QImage img = pixmap.toImage();
 
+
+        std::vector<int> res(64, 0);
+
+        // Проходимся по точкам картинки.
         for (int y = 0; y < img.height(); ++y)
-        {
             for (int x = 0; x < img.width(); ++x)
             {
                 QRgb pixel = img.pixel(x, y);
+
+                // 3 байта.
                 QBitArray bArr(3 * 8);
+
+                // Каждый байт - маска соответствующего цвета (как раз хватает, так как макс. знач. цвета - 256).
                 writeBits(qRed(pixel), bArr, 0, 7);
                 writeBits(qGreen(pixel), bArr, 8, 15);
                 writeBits(qBlue(pixel), bArr, 16, 23);
+
+
+                // Индекс - магия в том, что таким образом можно сгенерировать уникальные индексы.
+                // Плюс за счет выбора последних двух битов цвета - получаем нечто вроде бинаризации.
                 int i = (int) bArr[6] + (int) bArr[7] * 2 + (int) bArr[14] * 4
                       + (int) bArr[15] * 8 + (int) bArr[22] * 16 + (int) bArr[23] * 32;
+
+
+                // Увеличиваем значение в гистограмме по индексу.
                 ++res[i];
             }
-        }
 
         return res;
     }
 
     double distHistProj(std::vector<int> &hist1, std::vector<int> &hist2)
     {
-        // Гистограммы могут быть разных размеров - берем размер первой.
+        // 64.
         int size = hist1.size();
         std::vector<int> dists(size);
 
+        // Разности гистограмм - без масштабирования.
         for (int i = 0; i < size; ++i)
             dists[i] = qAbs(hist1[i] - hist2[i]);
 
@@ -115,12 +134,14 @@ private:
         for (int j = 0; j < size; ++j)
         {
             double sum = 0.0;
+            // Получаем масштабы для разностей.
             for (int i = 0; i < size; ++i)
                 sum += dists[j] * mA[i][j];
             tmp[j] = sum;
         }
 
         double sum = 0.0;
+        // Масштабируем обратно все разности гистограмм.
         for (int i = 0; i < size; ++i)
             sum += dists[i] * tmp[i];
         double res = qSqrt(sum);
@@ -143,18 +164,19 @@ private:
         {
             for (int x = 0; x < img.width(); ++x)
             {
-                if ( qRed( img.pixel(x, y) ) > 50)
+                if ( qRed( img.pixel(x, y) ) != 0 && qGreen( img.pixel(x, y) ) != 0 && qBlue( img.pixel(x, y) ) != 0 )
                     continue;
 
                 if (x < xMin)
                     xMin = x;
                 else if (x > xMax)
                     xMax = x;
+
+                if (y < yMin)
+                    yMin = y;
+                else if (y > yMax)
+                    yMax = y;
             }
-            if (y < yMin)
-                yMin = y;
-            else if (y > yMax)
-                yMax = y;
         }
 
         double xScale = (double)(xMax - xMin) / size1;
@@ -165,7 +187,7 @@ private:
         {
             for (int y = yMin; y < yMax + 1; ++y)
             {
-                if ( qRed( img.pixel(x, y) ) > 50)
+                if ( qRed( img.pixel(x, y) ) != 0 && qGreen( img.pixel(x, y) ) != 0 && qBlue( img.pixel(x, y) ) != 0 )
                     continue;
 
                 int xInd = (int)qMin((x - xMin) / xScale, (double) res.size() - 1);
@@ -228,7 +250,6 @@ public:
 
                 mA[i][j] = r / 8.0;
             }
-
     }
 
     ~MainWindow()
@@ -374,6 +395,22 @@ private slots:
 
 
         demonstrateResults(mFoundPicturesFiles);
+    }
+
+    //! Starts to search similar images using histograms of tangents.
+    void on_actionTangentHistSearch_triggered()
+    {
+        QString dirName = QFileDialog::getExistingDirectory(this, tr("Choose an image as a search template"));
+        if (dirName.isEmpty())
+        {
+            mUi->statusBar->showMessage(tr("You should choose some directory to look for images in!"), 3000);
+            return;
+        }
+
+        TangentHistSearch ths;
+        QList<QString> searchResults = ths.run(dirName, mPixmapItem);
+
+        demonstrateResults(searchResults);
     }
 
 };
