@@ -17,6 +17,12 @@
 class TangentHistSearch
 {
 
+private:
+
+    qreal CONFIG_THRESHOLD = 0.15;
+
+
+
 public:
 
     QList<QString> run(const QString & searchDirName, const QGraphicsPixmapItem * templateToSearch)
@@ -40,11 +46,17 @@ public:
         {
             QString currentFilePath = it.filePath();
 
+            cv::Mat matCurrent = cv::imread(currentFilePath.toUtf8().data());
 
+            if (matCurrent.empty())
+                continue;
 
+            std::vector<qreal> histCurr = evalHist(matCurrent);
 
+            qreal difference = histDiff(histSrc, histCurr);
 
-            resultsList.append(currentFilePath);
+            if (difference < CONFIG_THRESHOLD)
+                resultsList.append(currentFilePath);
         }
 
 
@@ -54,6 +66,85 @@ public:
 
 
 private:
+
+    std::vector<qreal> evalHist(cv::Mat& src)
+    {
+        // Восемь возможных переходов, по умолчанию пустота.
+        std::vector<qreal> result(8, 0);
+        int totalCount = 0;
+
+        std::vector<std::vector<cv::Point> > contours = extractContours(src);
+        for (unsigned long i = 0; i < contours.size(); ++i)
+        {
+            std::vector<cv::Point>& currentContour = contours.at(i);
+            addTransitionsForContour(currentContour, totalCount, result);
+
+            std::vector<cv::Point> loopContour;
+            loopContour.push_back(currentContour[0]);
+            loopContour.push_back(currentContour[currentContour.size() - 1]);
+            addTransitionsForContour(loopContour, totalCount, result);
+        }
+
+        for (unsigned long i = 0; i < result.size(); ++i)
+            result[i] /= totalCount;
+
+        return result;
+    }
+
+    qreal histDiff(const std::vector<qreal>& hist1, const std::vector<qreal>& hist2)
+    {
+        qreal totalDiff = 0;
+
+        for (unsigned long i = 0; i < hist1.size(); ++i)
+        {
+            totalDiff += qAbs(hist1[i] - hist2[i]);
+        }
+
+        return totalDiff;
+    }
+
+    void addTransitionsForContour(std::vector<cv::Point>& contour, int& total, std::vector<qreal>& transitions)
+    {
+        fillGapsInContour(contour);
+
+        for (unsigned long k = 1; k < contour.size(); ++k)
+        {
+            cv::Point& pPrev = contour.at(k - 1);
+            cv::Point& pCurr = contour.at(k);
+
+            // Числа от 0 до 2 включительно.
+            int xDiff = 1 + pCurr.x - pPrev.x;
+            int yDiff = 1 + pCurr.y - pPrev.y;
+
+            if (xDiff == 0)
+            {
+                if (yDiff == 0)
+                    transitions[0] += 1;
+                if (yDiff == 1)
+                    transitions[1] += 1;
+                if (yDiff == 2)
+                    transitions[2] += 1;
+
+            } else if (xDiff == 1)
+            {
+                if (yDiff == 0)
+                    transitions[3] += 1;
+                if (yDiff == 2)
+                    transitions[4] += 1;
+
+            } else
+            {
+                if (yDiff == 0)
+                    transitions[5] += 1;
+                if (yDiff == 1)
+                    transitions[6] += 1;
+                if (yDiff == 2)
+                    transitions[7] += 1;
+
+            }
+            ++total;
+        }
+    }
 
     std::vector<std::vector<cv::Point> > extractContours(cv::Mat& matForContoursExtraction)
     {
@@ -134,43 +225,6 @@ private:
 
         pushInnerPointRecursively(p1, pCenter, points);
         pushInnerPointRecursively(p2, pCenter, points);
-    }
-
-    std::vector<qreal> evalHist(cv::Mat& src)
-    {
-        // !!!
-        std::vector<std::vector<cv::Point> > contours = extractContours(src);
-
-        std::vector<cv::Point> contour = contours.at(0);
-
-        fillGapsInContour(contour);
-
-        cv::Mat drawing = cv::Mat::zeros( src.size(), CV_8UC3 );
-        for (unsigned long i = 1; i < contour.size(); ++i)
-        {
-            cv::Point p1 = contour.at(i-1);
-            cv::Point p2 = contour.at(i);
-            cv::line(drawing, p1, p2, cv::Scalar(255, 255, 255));
-        }
-
-        cv::line(drawing, contour.at(0), contour.at(contour.size() - 1), cv::Scalar(255, 255, 255));
-
-        cv::imshow("ke", drawing);
-
-//        std::vector<cv::Point>& kek = ccc.at(0);
-//        for (unsigned long i = 0; i < kek.size(); ++i)
-//        {
-//            cv::Point& p = kek.at(i);
-//            qDebug() << "before " << p.x << " " << p.y;
-//        }
-//        fillGapsInContour(kek);
-//        for (unsigned long i = 0; i < kek.size(); ++i)
-//        {
-//            cv::Point& p = kek.at(i);
-//            qDebug() << "after " << p.x << " " << p.y;
-//        }
-
-        return std::vector<qreal>();
     }
 
 };
