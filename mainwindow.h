@@ -424,7 +424,22 @@ private slots:
         }
 
         Textures textures;
-        QList<QString> searchResults = textures.run(dirName, mPixmapItem);
+        QList<QString> searchResults = textures.binarySearch(dirName, mPixmapItem);
+
+        demonstrateResults(searchResults);
+    }
+
+    void on_actionMagdirTextureSearch_triggered()
+    {
+        QString dirName = QFileDialog::getExistingDirectory(this, tr("Choose an image as a search template"));
+        if (dirName.isEmpty())
+        {
+            mUi->statusBar->showMessage(tr("You should choose some directory to look for images in!"), 3000);
+            return;
+        }
+
+        Textures textures;
+        QList<QString> searchResults = textures.magdirSearch(dirName, mPixmapItem);
 
         demonstrateResults(searchResults);
     }

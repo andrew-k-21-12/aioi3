@@ -46,6 +46,7 @@
    <addaction name="actionShapeHistogramDistance"/>
    <addaction name="actionTangentHistSearch"/>
    <addaction name="actionBinaryTextureSearch"/>
+   <addaction name="actionMagdirTextureSearch"/>
   </widget>
   <action name="actionColorHistogram">
    <property name="text">
@@ -79,6 +80,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+B</string>
+   </property>
+  </action>
+  <action name="actionMagdirTextureSearch">
+   <property name="text">
+    <string>Поиск текст. по мод. и напр. град.</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+M</string>
    </property>
   </action>
  </widget>

@@ -3,6 +3,11 @@
 
 #include <QList>
 #include <QGraphicsPixmapItem>
+#include <qmath.h>
+
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 class Textures
 {
@@ -11,6 +16,7 @@ private:
 
     int CONFIG_INTENSITY_THRESHOLD = 128;
     qreal CONFIG_HIST_DIFF_THRESHOLD = 0.5;
+    qreal CONFIG_MAGDIR_DIFF_THRESHOLD = 140 * 100;
 
 
 
@@ -78,35 +84,173 @@ private:
 
 
 
+    std::vector<std::vector<int> > evalMagdir(const QImage& src)
+    {
+        cv::Mat matSrc = cv::Mat(src.height(), src.width(), CV_8UC3, (uchar*) src.bits(), src.bytesPerLine());
+        // Deep copy to gray.
+        cvtColor(matSrc, matSrc, CV_BGR2GRAY);
+
+        // Temp mats and mats for abs results.
+        cv::Mat gradX, gradY;
+        cv::Mat absGradX, absGradY;
+
+        int ddepth = CV_16S;
+        int scale = 1;
+        int delta = 0;
+
+        // X.
+        cv::Sobel(matSrc, gradX, ddepth, 1, 0, 3, scale, delta, cv::BORDER_DEFAULT);
+        cv::convertScaleAbs(gradX, absGradY);
+
+        // Y.
+        cv::Sobel(matSrc, gradY, ddepth, 0, 1, 3, scale, delta, cv::BORDER_DEFAULT);
+        cv::convertScaleAbs(gradY, absGradY);
+
+
+        int size = absGradX.rows * absGradX.cols;
+        std::vector<qreal> mag(size);
+        std::vector<qreal> dir(size);
+
+        int index = 0;
+
+        for (auto y = 0; y < absGradX.rows; ++y)
+            for (auto x = 0; x < absGradX.cols; ++x)
+            {
+                // Может, поменять X и Y?
+                dir[index] = qSqrt(qPow(absGradX.at<uint8_t>(cv::Point(x, y)), 2) + qPow(absGradY.at<uint8_t>(cv::Point(x, y)), 2));
+                mag[index] = qAtan2(absGradY.at<uint8_t>(cv::Point(x, y)), absGradX.at<uint8_t>(cv::Point(x, y)));
+                ++index;
+            }
+
+        int histSize = 10;
+        int maxIndex = histSize - 1;
+        std::vector<int> magHist(histSize);
+        std::vector<int> dirHist(histSize);
+
+        qreal magMin = findMin(mag);
+        qreal magMax = findMax(mag);
+        qreal magDelta = magMax - magMin;
+        qreal dirMin = findMin(dir);
+        qreal dirMax = findMax(dir);
+        qreal dirDelta = dirMax - dirMin;
+
+        for (int i = 0; i < size; ++i)
+        {
+            int j = qMin(qRound((mag[i] - magMin) * histSize / magDelta), maxIndex);
+            ++magHist[j];
+
+            int k = qMin(qRound((dir[i] - dirMin) * histSize / dirDelta), maxIndex);
+            ++dirHist[k];
+        }
+
+
+        std::vector<std::vector<int> > result;
+        result.push_back(magHist);
+        result.push_back(dirHist);
+
+        return result;
+    }
+
+    qreal findMin(std::vector<qreal>& src)
+    {
+        qreal min = INT_MAX;
+
+        for (unsigned long i = 0; i < src.size(); ++i)
+        {
+            min = qMin(min, src[i]);
+        }
+
+        return min;
+    }
+
+    qreal findMax(std::vector<qreal>& src)
+    {
+        qreal max = - (INT_MAX - 1);
+
+        for (unsigned long i = 0; i < src.size(); ++i)
+        {
+            max = qMax(max, src[i]);
+        }
+
+        return max;
+    }
+
+    qreal magdirDiff(std::vector<std::vector<int> >& magdir1, std::vector<std::vector<int> >& magdir2)
+    {
+        qreal totalMag = 0;
+        qreal totalDir = 0;
+
+        std::vector<int>& mag1 = magdir1.at(0);
+        std::vector<int>& mag2 = magdir2.at(0);
+
+        std::vector<int>& dir1 = magdir1.at(1);
+        std::vector<int>& dir2 = magdir2.at(1);
+
+        for (unsigned long i = 0; i < mag1.size(); ++i)
+            totalMag += qAbs(mag1[i] - mag2[i]);
+
+        for (unsigned long i = 0; i < dir1.size(); ++i)
+            totalDir += qAbs(dir1[i] - dir2[i]);
+
+
+        return totalMag + totalDir;
+    }
+
+
+
 public:
 
-    QList<QString> run(const QString & searchDirName, const QGraphicsPixmapItem * templateToSearch)
+    QList<QString> binarySearch(const QString & searchDirName, const QGraphicsPixmapItem * templateToSearch)
     {
         QList<QString> resultsList;
 
         QImage imgSrc = templateToSearch->pixmap().toImage().convertToFormat(QImage::Format_RGB888);
         std::map<uint8_t, qreal> histSrc = evalBinaryHist(imgSrc);
 
-        // Фильтры, чтобы просматривать только изображения.
         QStringList namesFilterList;
         namesFilterList.append("*.png");
         namesFilterList.append("*.jpg");
 
-        // Проходимся по всем файлам в папке.
         for (QDirIterator it(searchDirName, namesFilterList, QDir::Files); it.hasNext(); it.next())
         {
             QString currentFilePath = it.filePath();
-
             QImage imgCurrent = QImage(currentFilePath);
-
             if (imgCurrent.isNull())
                 continue;
 
             std::map<uint8_t, qreal> histCurr = evalBinaryHist(imgCurrent);
-
             qreal difference = histDiff(histSrc, histCurr);
 
             if (difference < CONFIG_HIST_DIFF_THRESHOLD)
+                resultsList.append(currentFilePath);
+        }
+
+
+        return resultsList;
+    }
+
+    QList<QString> magdirSearch(const QString & searchDirName, const QGraphicsPixmapItem * templateToSearch)
+    {
+        QList<QString> resultsList;
+
+        QImage imgSrc = templateToSearch->pixmap().toImage().convertToFormat(QImage::Format_RGB888);
+        std::vector<std::vector<int> > magdirSrc = evalMagdir(imgSrc);
+
+        QStringList namesFilterList;
+        namesFilterList.append("*.png");
+        namesFilterList.append("*.jpg");
+
+        for (QDirIterator it(searchDirName, namesFilterList, QDir::Files); it.hasNext(); it.next())
+        {
+            QString currentFilePath = it.filePath();
+            QImage imgCurrent = QImage(currentFilePath);
+            if (imgCurrent.isNull())
+                continue;
+
+            std::vector<std::vector<int> > magdirCurr = evalMagdir(imgCurrent);
+            qreal difference = magdirDiff(magdirSrc, magdirCurr);
+
+            if (difference < CONFIG_MAGDIR_DIFF_THRESHOLD)
                 resultsList.append(currentFilePath);
         }
 
