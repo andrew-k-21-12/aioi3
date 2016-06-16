@@ -21,7 +21,7 @@ class TangentHistSearch
 
 private:
 
-    qreal CONFIG_THRESHOLD = 0.1755;
+    qreal CONFIG_THRESHOLD = 0.095;
     qreal CONFIG_MAX_SCALE_SIDE = 750;
 
 
@@ -163,7 +163,13 @@ private:
             int xNextDiff = 1 + pCurr.x - pNext.x;
             int yNextDiff = 1 + pCurr.y - pNext.y;
 
-            int index = xPrevDiff + yPrevDiff * 10 + xNextDiff * 100 + yNextDiff * 1000;
+            int xMinIndex = qMin(xPrevDiff, xNextDiff);
+            int yMinIndex = qMin(yPrevDiff, yNextDiff);
+            int xMaxIndex = qMax(xPrevDiff, xNextDiff);
+            int yMaxIndex = qMax(yPrevDiff, yNextDiff);
+
+            int index = xMinIndex + yMinIndex * 10 + xMaxIndex * 100 + yMaxIndex * 1000;
+            // int index = xPrevDiff + yPrevDiff * 10 + xNextDiff * 100 + yNextDiff * 1000;
 
             transitions[index] += 1;
 
