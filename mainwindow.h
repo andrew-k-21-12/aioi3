@@ -444,6 +444,49 @@ private slots:
         demonstrateResults(searchResults);
     }
 
+    void on_actionSobel_triggered()
+    {
+        QImage src = mPixmapItem->pixmap().toImage();
+        QImage dst = QImage(src.width(), src.height(), QImage::Format_RGB888);
+        dst.fill(Qt::transparent);
+
+        int coreX[3][3] = { {-1, 0, 1},
+                            {-2, 0, 2},
+                            {-1, 0, 1} };
+        int coreY[3][3] = { {-1, -2, -1},
+                            { 0,  0,  0},
+                            { 1,  2,  1} };
+
+        for (int x = 0; x < src.width(); ++x)
+            for (int y = 0; y < src.height(); ++y)
+            {
+                int gX = 0,
+                    gY = 0;
+
+                for (int i = -1; i <= 1; ++i)
+                    for (int j = -1; j <= 1; ++j)
+                    {
+                        int targetX = x + i;
+                        int targetY = y + j;
+
+                        if (targetX < 0 || targetX >= src.width() || targetY < 0 || targetY >= src.height())
+                            continue;
+
+                        int intensity = qGray(src.pixel(targetX, targetY));
+
+                        gX += intensity * coreX[i+1][j+1];
+                        gY += intensity * coreY[i+1][j+1];
+                    }
+
+                int color = qRound( qSqrt(qPow(gX, 2) + qPow(gY, 2)) );
+                color = qMin(255, color);
+
+                dst.setPixel(x, y, qRgb(color, color, color));
+            }
+
+        mPixmapItem->setPixmap(QPixmap::fromImage(dst));
+    }
+
 };
 
 #endif // MAINWINDOW_H

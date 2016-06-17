@@ -32,7 +32,14 @@
     </property>
     <addaction name="actionLoad"/>
    </widget>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>Тесты</string>
+    </property>
+    <addaction name="actionSobel"/>
+   </widget>
    <addaction name="menuImage"/>
+   <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QToolBar" name="mainToolBar">
@@ -88,6 +95,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+M</string>
+   </property>
+  </action>
+  <action name="actionSobel">
+   <property name="text">
+    <string>Ручной Собель</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
  </widget>
