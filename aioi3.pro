@@ -26,7 +26,9 @@ SOURCES += main.cpp
 HEADERS  += mainwindow.h \
     resultdialog.h \
     tangenthistsearch.h \
-    textures.h
+    textures.h \
+    sketchsearch.h \
+    skeletonbuilder.h
 
 FORMS    += mainwindow.ui \
     resultdialog.ui

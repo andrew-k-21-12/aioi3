@@ -26,6 +26,7 @@
 #include "resultdialog.h"
 #include "tangenthistsearch.h"
 #include "textures.h"
+#include "sketchsearch.h"
 
 #include <QDebug>
 
@@ -485,6 +486,35 @@ private slots:
             }
 
         mPixmapItem->setPixmap(QPixmap::fromImage(dst));
+    }
+
+    void on_actionSketchSearch_triggered()
+    {
+        SketchSearch ss1;
+        cv::Mat kek = cv::imread("/Users/Andrew/Desktop/test3.jpg");
+        cvtColor(kek, kek, CV_BGR2GRAY);
+        ss1.genSketch(kek, kek);
+        cv::imshow("1", kek);
+
+        cv::Mat kek2 = cv::imread("/Users/Andrew/Desktop/test.jpg");
+        cvtColor(kek2, kek2, CV_BGR2GRAY);
+        ss1.genSketch(kek2, kek2);
+        cv::imshow("12", kek2);
+        return;
+
+
+
+        QString dirName = QFileDialog::getExistingDirectory(this, tr("Choose an image as a search template"));
+        if (dirName.isEmpty())
+        {
+            mUi->statusBar->showMessage(tr("You should choose some directory to look for images in!"), 3000);
+            return;
+        }
+
+        SketchSearch ss;
+        QList<QString> searchResults = ss.search(dirName, mPixmapItem);
+
+        demonstrateResults(searchResults);
     }
 
 };

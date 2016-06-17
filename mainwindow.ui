@@ -54,6 +54,7 @@
    <addaction name="actionTangentHistSearch"/>
    <addaction name="actionBinaryTextureSearch"/>
    <addaction name="actionMagdirTextureSearch"/>
+   <addaction name="actionSketchSearch"/>
   </widget>
   <action name="actionColorHistogram">
    <property name="text">
@@ -103,6 +104,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionSketchSearch">
+   <property name="text">
+    <string>Поиск по эскизу</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
    </property>
   </action>
  </widget>
